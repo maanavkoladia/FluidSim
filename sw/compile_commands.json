@@ -1,0 +1,18 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-c",
+      "-Wextra",
+      "-Wall",
+      "-O0",
+      "-Ilib/common",
+      "-o",
+      "build/FuildSim.exe",
+      "src/main.c"
+    ],
+    "directory": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw",
+    "file": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/src/main.c",
+    "output": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/build/FuildSim.exe"
+  }
+]
