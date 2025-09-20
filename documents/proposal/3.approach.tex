@@ -1,0 +1,29 @@
+\section{Approach}
+\label{sec:approach}
+
+We will implement a real-time 3D fluid simulation using CUDA for physics and OpenGL for rendering. 
+CUDA kernels will compute advection, pressure projection, and free-surface tracking, while OpenGL will handle rendering and shading. 
+The CPU will coordinate simulation steps and input.
+
+\subsection{Resources Needed} 
+\begin{itemize}
+    \item \textbf{Hardware:} NVIDIA CUDA-capable GPU, multi-core CPU.
+    \item \textbf{Software:} CUDA toolkit, OpenGL, Nsight.
+\end{itemize}
+
+\subsection{Uncertainties}
+\begin{itemize}
+    \item Pressure solver performance (Jacobi vs.\ Conjugate Gradient/Multigrid)
+    \item Surface method (marching cubes vs.\ raymarching)
+    \item CUDA optimization (memory layout, block/grid configuration)
+    \item Balancing realism with visual quality
+\end{itemize}
+
+\subsection{Task Division (4 People)}
+\begin{itemize}
+    \item \textbf{Maanav:} Velocity field and scalar advection kernels
+    \item \textbf{Andres B:} Pressure solver, projection, divergence computation
+    \item \textbf{Shrikar C:} Free-surface (level set) tracking, surface extraction
+    \item \textbf{Kareem D:} Rendering pipeline, water shaders, UI, and demo integration
+\end{itemize}
+All members will collaborate on debugging, performance optimization, and final demo preparation.

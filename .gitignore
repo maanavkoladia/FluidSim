@@ -2,5 +2,14 @@ build/
 
 .ignore
 
+compile_commands.json
+
+*.log 
+*.aux 
+*.dvi 
+*.blg 
+*.bbl 
+*.ps
+
 
 
