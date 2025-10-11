@@ -1,1 +1,0 @@
-https://github.com/kumpera/Lock-free-hastable/blob/master/hash.c

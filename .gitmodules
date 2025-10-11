@@ -1,0 +1,3 @@
+[submodule "sw/mpsLibC"]
+	path = sw/mpsLibC
+	url = https://github.com/maanavkoladia/mpsLibC.git
