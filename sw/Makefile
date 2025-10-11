@@ -18,13 +18,18 @@ SRC_FILES = \
 		   src/main.c	\
 
 INCLUDES = \
-		   -Ilib/common	\
+		   -ImpsLibC/common	\
+
+
+OBJS = $(patsubst src/%.c,$(BUILD_DIR)/%.o,$(SRC_FILES))
 
 all: $(TARGET)
 	
+$(TARGET) : $(OBJS) | $(BUILD_DIR)
+	$(CC) $(OBJS) -o $@  $(LD_FLAGS) 
 
-$(TARGET) : $(SRC_FILES) | $(BUILD_DIR)
-	$(CC) $(C_FLAGS) -o $@ $(SRC_FILES) $(LD_FLAGS) $(INCLUDES)
+$(BUILD_DIR)/%.o: src/%.c | $(BUILD_DIR)
+	$(CC) $(C_FLAGS) $(INCLUDES) -c $< -o $@
 
 $(BUILD_DIR):
 	mkdir -p $@
@@ -32,6 +37,6 @@ $(BUILD_DIR):
 .PHONY : clean
 clean : 
 	rm -rf ./$(BUILD_DIR)
-	rm -rf $(TAR)
+	rm -rf $(TARGET)
 
 

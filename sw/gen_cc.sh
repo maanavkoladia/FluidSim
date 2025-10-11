@@ -8,4 +8,4 @@ bear -- make -j
 
 echo "compilation succeeded"
 
-./"$elfPath"
+#./"$elfPath"
