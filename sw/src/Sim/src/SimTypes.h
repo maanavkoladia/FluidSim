@@ -1,32 +1,25 @@
 #pragma once
 
+#include "../inc/Sim.h"
 #include <stdint.h>
 
 typedef struct {
-    // --- Physics ---
-    double density;    // kg/m^3
-    double viscosity;  // Pa·s
-    double gravity[2]; // gx, gy in m/s^2
+    double u;      // horizontal velocity at left face
+    double v;      // vertical velocity at bottom face
+    double p;      // pressure at cell center
+    double phi;    // free surface / level set
+    uint8_t solid; // boundary/solid flag
+} cell_t;
 
-    // --- Simulation control ---
-    double timestep;   // dt in seconds
-    double cfl_number; // CFL safety factor
+typedef struct {
+    double currTimeStep;
+    int nx, ny;    // grid size
+    double dx, dy; // cell spacing
+    cell_t* cells; // 2D array of cell structs
 
-    // --- Grid / domain ---
-    int grid_resolution[2]; // Nx, Ny
-    double domain_size[2];  // width, height in meters
-    double cell_size;       // dx, optional
-
-    // --- Boundaries ---
-    char boundary_type[32]; // "no_slip", "free_slip", etc.
-
-    // --- Initial conditions ---
-    double initial_velocity[2];    // u0, v0
-    double initial_surface_height; // y position of water level
-
-    // --- Numerics ---
-    char advection_scheme[32];   // "semi_lagrangian", "upwind"
-    char projection_solver[32];  // "pcg", "jacobi", "multigrid"
-    double projection_tolerance; // solver tolerance
-    int projection_max_iters;    // max iterations for solver
-} sim_params_t;
+    // --- Temporary / computed values per timestep ---
+    double dt;                   // timestep (adaptive, based on CFL)
+    double max_velocity;         // max(|u|, |v|) across all cells
+    double total_kinetic_energy; // sum over cells
+    double fluid_volume;         // volume of fluid (phi < 0)
+} sim_state_t;

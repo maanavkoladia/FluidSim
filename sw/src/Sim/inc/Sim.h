@@ -2,7 +2,11 @@
 
 #include <stdint.h>
 
-typedef enum : uint8_t { SIM_SUCCESS = 0, SIM_ERR, SIM_ERR_STARTUP } sim_err_t;
+typedef enum : uint8_t {
+    SIM_SUCCESS = 0,
+    SIM_ERR,
+    SIM_ERR_STARTUP
+} sim_err_t;
 
 typedef struct {
     // --- Physics ---
@@ -15,9 +19,11 @@ typedef struct {
     double cfl_number; // CFL safety factor
 
     // --- Grid / domain ---
-    int grid_resolution[2]; // Nx, Ny
-    double domain_size[2];  // width, height in meters
-    double cell_size;       // dx, optional
+    int grid_resolution[2]; // Nx, Ny, number of cells in x and y
+    double domain_size[2];  // width, height in meters, real world size of the
+                            // sim in X, Y
+    double cell_size[2];    // dx, optional, physical size of the cell relative to
+                            // real world
 
     // --- Boundaries ---
     char boundary_type[32]; // "no_slip", "free_slip", etc.
@@ -33,8 +39,10 @@ typedef struct {
     int projection_max_iters;    // max iterations for solver
 } sim_params_t;
 
-sim_err_t SimInit(sim_err_t* pParams);
+sim_err_t SimInit(sim_params_t* pParams);
 
 sim_err_t SimStart(void);
 
 sim_err_t SimStop(void);
+
+sim_err_t SimJoin(void);

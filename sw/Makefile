@@ -8,7 +8,7 @@ C_FLAGS = \
 		 -Wextra	\
 		 -Wall	\
 		 -O0	\
-		 -g 	\
+		 -g3 	\
 
 LD_FLAGS = \
 		  -lm	\
@@ -16,9 +16,14 @@ LD_FLAGS = \
 
 SRC_FILES = \
 		   src/main.c	\
+		   src/Sim/src/Controller.c	\
+		   src/Sim/src/Sim.c	\
+		   mpsLibC/RingBuffer/PFifo/PFifo.c	\
+		   
 
 INCLUDES = \
 		   -ImpsLibC/common	\
+		   -ImpsLibC/RingBuffer/PFifo	\
 
 
 OBJS = $(patsubst src/%.c,$(BUILD_DIR)/%.o,$(SRC_FILES))
@@ -28,7 +33,8 @@ all: $(TARGET)
 $(TARGET) : $(OBJS) | $(BUILD_DIR)
 	$(CC) $(OBJS) -o $@  $(LD_FLAGS) 
 
-$(BUILD_DIR)/%.o: src/%.c | $(BUILD_DIR)
+$(BUILD_DIR)/%.o: src/%.c
+	mkdir -p $(dir $@)
 	$(CC) $(C_FLAGS) $(INCLUDES) -c $< -o $@
 
 $(BUILD_DIR):
