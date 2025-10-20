@@ -4,11 +4,14 @@
 #include <stdint.h>
 
 typedef struct {
-    double u;      // horizontal velocity at left face
-    double v;      // vertical velocity at bottom face
-    double p;      // pressure at cell center
-    double phi;    // free surface / level set
+    double u;   // horizontal velocity at left face
+    double v;   // vertical velocity at bottom face
+    double p;   // pressure at cell center
+    double phi; // free surface / level set
+    double density;
+    double viscosity;
     uint8_t solid; // boundary/solid flag
+
 } cell_t;
 
 typedef struct {
@@ -17,7 +20,6 @@ typedef struct {
     double dx, dy; // cell spacing
     cell_t* cells; // 2D array of cell structs
 
-    // --- Temporary / computed values per timestep ---
     double dt;                   // timestep (adaptive, based on CFL)
     double max_velocity;         // max(|u|, |v|) across all cells
     double total_kinetic_energy; // sum over cells

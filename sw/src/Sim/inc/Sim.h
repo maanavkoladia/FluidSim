@@ -1,43 +1,70 @@
 #pragma once
-
+/* ================================================== */
+/*                      INCLUDES                      */
+/* ================================================== */
 #include <stdint.h>
 
+/* ================================================== */
+/*                    enums & types                   */
+/* ================================================== */
 typedef enum : uint8_t {
     SIM_SUCCESS = 0,
     SIM_ERR,
     SIM_ERR_STARTUP
 } sim_err_t;
 
+typedef enum {
+    NO_SLIP,
+    FREE_SLIP,
+
+} BoundaryType_t;
+
+typedef enum {
+    ADVECT_SEMI_LAGRANGIAN,
+    ADVECT_UPWIND,
+    ADVECT_MACCORMACK
+} AdvectionScheme_t;
+
+typedef enum {
+    PROJ_JACOBI,
+    PROJ_PCG,
+    PROJ_MULTIGRID
+} ProjectionSolver_t;
+
 typedef struct {
     // --- Physics ---
-    double density;    // kg/m^3
-    double viscosity;  // Pa·s
-    double gravity[2]; // gx, gy in m/s^2
+    double density;
+    double viscosity;
+    double gravity[2];
 
     // --- Simulation control ---
-    double timestep;   // dt in seconds
-    double cfl_number; // CFL safety factor
+    double timestep;
+    double cfl_number;
 
     // --- Grid / domain ---
-    int grid_resolution[2]; // Nx, Ny, number of cells in x and y
-    double domain_size[2];  // width, height in meters, real world size of the
-                            // sim in X, Y
-    double cell_size[2];    // dx, optional, physical size of the cell relative to
-                            // real world
+    int grid_resolution[2];
+    double domain_size[2];
 
     // --- Boundaries ---
-    char boundary_type[32]; // "no_slip", "free_slip", etc.
+    BoundaryType_t boundary_type;
 
     // --- Initial conditions ---
-    double initial_velocity[2];    // u0, v0
-    double initial_surface_height; // y position of water level
+    double initial_velocity[2];
+    double initial_surface_height;
 
     // --- Numerics ---
-    char advection_scheme[32];   // "semi_lagrangian", "upwind"
-    char projection_solver[32];  // "pcg", "jacobi", "multigrid"
-    double projection_tolerance; // solver tolerance
-    int projection_max_iters;    // max iterations for solver
+    AdvectionScheme_t advection_scheme;
+    ProjectionSolver_t projection_solver;
+    double projection_tolerance;
+    int projection_max_iters;
 } sim_params_t;
+/* ================================================== */
+/*            GLOBAL VARIABLE DEFINITIONS             */
+/* ================================================== */
+
+/* ================================================== */
+/*            FUNCTION PROTOTYPES (DECLARATIONS)      */
+/* ================================================== */
 
 sim_err_t SimInit(sim_params_t* pParams);
 
@@ -46,3 +73,7 @@ sim_err_t SimStart(void);
 sim_err_t SimStop(void);
 
 sim_err_t SimJoin(void);
+
+/* ================================================== */
+/*                 MACRO FUNC  DEFINITIONS            */
+/* ================================================== */

@@ -20,7 +20,6 @@ int main(int argc, char** argv) {
         LOG("Slept for %d seconds", i);
         sleep(1);
     }
-
     ASSERT_COMMON_POSIX(SimStop(), "Failed to Stop Sim");
 
     LOG("Program Exited");
