@@ -9,13 +9,65 @@
 \maketitle
 
 \section{Document Metadata}
-Provide project title, team members, course info, date, and version. Add a revision history table and role descriptions (Technical Lead, Project Manager, Concurrency Specialist, etc.). Include schedules of what role each team member will play throughout the semester (if you are all going to share each role, state that here).
+Provide project title, team members, course info, date, and version. 
+Add a revision history table and role descriptions (Technical Lead, Project Manager, Concurrency Specialist, etc.). Include schedules of what role each team member will play throughout the semester (if you are all going to share each role, state that here).
+
+\subsection{Version History}
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{|l|l|l|l|}
+\hline
+\textbf{Version} & \textbf{Date} & \textbf{Owner} & \textbf{Description} \\
+\hline
+v1.0 & 10/20/2025 & Andres & Rough Draft \\
+\hline
+v1.1 & 10/22/2025 & Maanav and Kareem & Final Draft \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Team Members}
+
+\begin{itemize}
+    \item Maanav Koladia
+    \item Karemeldin Mohamed
+    \item Shrikar Thangavel
+    \item Andres Wearden
+\end{itemize}
+
+\subsection{Team Roles and Responsibilities}
+
+All team members will contribute collectively to every stage of the project, including design, implementation, testing, and documentation. Rather than assigning fixed roles, responsibilities will be distributed dynamically based on project requirements and individual expertise. This collaborative approach ensures that all members gain experience across the full development cycle and that the project benefits from diverse perspectives and skill sets.
 
 \section{Executive Summary}
-Summarize the project in 1--2 paragraphs, describing the problem being solved, the overall approach, and the intended outcome.
+This project's goal is to create a high-performance, real-time 3D fluid simulator that is both visually realistic and numerically stable. The core problem being solved is simulating an incompressible fluid (like water) in a way that conserves mass—preventing it from "squishing" or "expanding"—while running at interactive frame rates. The overall approach is a decoupled, three-service architecture built in C. First, a physics service (FS-3D) uses CUDA on the GPU to perform the heavy computational work of solving the fluid dynamics equations on a 3D grid. Second, a Transform service, parallelized across a CPU thread pool, consumes this physics data and converts the fluid's 3D state (an implicit levelSet grid) into an explicit triangle mesh via the Marching Cubes algorithm.
+
+This generated mesh is then passed to a third, independent GL/Display service, which uses OpenGL to render the fluid with realistic water shaders. By decoupling these three stages with multi-threaded MPMC (Multi-Producer, Multi-Consumer) queues, the system avoids bottlenecks and allows the physics simulation to run at a fixed, stable 60 steps per second independent of the final render frame rate. The intended outcome is a stable, interactive live demo of a 3D water simulation that achieves a between 20-30 FPS, with the architecture designed to be directly scalable from its initial 2D milestone.
 
 \section{System Overview}
-Include a polished architecture diagram and execution model. Explain major design decisions and trade-offs, including how tasks are split between CPU and GPU.
+
+\subsection{Overview}
+
+This project's goal is to create a high-performance, real-time 3D fluid simulator that is both visually realistic and numerically stable. The core problem being solved is simulating an incompressible fluid (like water) in a way that conserves mass—preventing it from "squishing" or "expanding"—while running at interactive frame rates.
+
+\subsection{System Architecture}
+
+The overall approach follows a decoupled, three-service architecture implemented in \texttt{C}. The major components are as follows:
+
+\begin{enumerate}
+    \item \textbf{Physics Service (FS-3D)} — Uses CUDA on the GPU to perform the heavy computational work of solving the fluid dynamics equations on a 3D grid.
+    \item \textbf{Transform Service} — Parallelized across a CPU thread pool. It consumes the physics data and converts the fluid’s 3D state (an implicit level set grid) into an explicit triangle mesh using the Marching Cubes algorithm.
+    \item \textbf{GL/Display Service} — Uses OpenGL to render the generated mesh with realistic water shaders.
+\end{enumerate}
+
+\subsection{Execution Model}
+
+The three stages communicate via multi-threaded MPMC (Multi-Producer, Multi-Consumer) queues. This decoupled design eliminates synchronization bottlenecks and allows the physics simulation to maintain a fixed, stable rate of 60 simulation steps per second, independent of the rendering frame rate.
+
+\subsection{Expected Outcome}
+
+The intended outcome is a stable, interactive live demo of a 3D water simulation achieving between 20–30 FPS. The architecture is designed to be scalable and directly extendable from the project’s initial 2D milestone implementation.
 
 \section{Functional Requirements}
 Provide a numbered list of functional requirements. Each should be specific, measurable, and testable.
