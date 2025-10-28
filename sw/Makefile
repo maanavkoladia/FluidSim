@@ -4,6 +4,9 @@ TARGET = $(PROJECT).elf
 
 CC = gcc
 
+LIB_DIR = mpsLibC
+LIB = $(LIB_DIR)/build/$(LIB_DIR).a 
+
 C_FLAGS = \
 		 -Wextra	\
 		 -Wall	\
@@ -18,7 +21,6 @@ SRC_FILES = \
 		   src/main.c	\
 		   src/Sim/src/Controller.c	\
 		   src/Sim/src/Sim.c	\
-		   mpsLibC/RingBuffer/PFifo/PFifo.c	\
 		   
 
 INCLUDES = \
@@ -28,8 +30,14 @@ INCLUDES = \
 
 OBJS = $(patsubst src/%.c,$(BUILD_DIR)/%.o,$(SRC_FILES))
 
+.PHONY : clean all
+
 all: $(TARGET)
 	
+# Ensure library is built first
+$(LIB):
+	$(MAKE) -C $(LIB_DIR) all
+
 $(TARGET) : $(OBJS) | $(BUILD_DIR)
 	$(CC) $(OBJS) -o $@  $(LD_FLAGS) 
 
@@ -40,9 +48,9 @@ $(BUILD_DIR)/%.o: src/%.c
 $(BUILD_DIR):
 	mkdir -p $@
 
-.PHONY : clean
 clean : 
 	rm -rf ./$(BUILD_DIR)
 	rm -rf $(TARGET)
+	$(MAKE) -C $(LIB_DIR) clean
 
 
