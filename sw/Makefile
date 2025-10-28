@@ -1,4 +1,4 @@
-PROJECT = FuildSim
+PROJECT = FluidSim
 BUILD_DIR = build
 TARGET = $(PROJECT).elf
 
