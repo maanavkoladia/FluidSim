@@ -18,6 +18,16 @@ typedef enum {
     SIM_ERR_STARTUP
 } sim_err_t;
 
+typedef enum {
+    SEMI_LAGRANGIAN
+} Advection_Scheme_t;
+
+typedef enum {
+    GAUSS_SEIDEL,
+    JACOBI,
+    RED_BLACK_GAUSS_SEIDEL
+} PressureSolver_Scheme_t;
+
 typedef struct {
     double u; // right is pos, left is negative
     double v; // op is pos, down is neg
