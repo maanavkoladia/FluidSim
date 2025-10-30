@@ -12,6 +12,8 @@
 
 sim_params_t simParams;
 
+
+
 int main(int argc, char** argv) {
     LOG("Fluid Sim Starting Up");
 
