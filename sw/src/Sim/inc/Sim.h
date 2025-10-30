@@ -3,13 +3,14 @@
 /*                      INCLUDES                      */
 /* ================================================== */
 #include <stdint.h>
+#include <time.h>
 
 /* ================================================== */
 /*                    enums & types                   */
 /* ================================================== */
 
 #define GRAVITY_CONST (-9.81)
-#define FREQ (30)
+#define FREQ (1 / 30)
 #define OVERRELAXATION (1.9)
 
 typedef enum {
@@ -18,50 +19,47 @@ typedef enum {
     SIM_ERR_STARTUP
 } sim_err_t;
 
+typedef enum {
+    SEMI_LAGRANGIAN
+} Advection_Scheme_t;
+
+typedef enum {
+    GAUSS_SEIDEL,
+    JACOBI,
+    RED_BLACK_GAUSS_SEIDEL
+} PressureSolver_Scheme_t;
+
+typedef enum {
+    AIR,
+    FLUID,
+    SOLID
+} CellMaterial_t;
+
 typedef struct {
     double u; // right is pos, left is negative
     double v; // op is pos, down is neg
-    double p;   // pressure at cell center
-    double phi; // free surface / level set
-    double density;
-    double viscosity;
-    uint8_t solid; // boundary/solid flag
-
+    double p; // pressure
+    CellMaterial_t type;
 } Cell_t;
 
 typedef struct {
-    double gravity_const;
     double timeStep;
     double nx, ny;      // num of cells
-    double h;           // phtosical width of cell
-    uint64_t timesteps; // numver of iterations
-    double overrelaxation;
+    double w;           // phtosical width of cell
+    uint64_t timesteps; // numver of iterations, if INT MAX, then inf
+    double overrelaxation_const;
+    Cell_t** cells;
 } SimState_t;
 
 typedef struct {
-    double density;
-    double viscosity;
-    double gravity[2];
-    double timestep;
-    double cfl_number;
-    int grid_resolution[2];
-    double domain_size[2];
-    double initial_velocity[2];
-    double initial_surface_height;
-} sim_params_t;
-
-typedef struct {
-    double currTimeStep;
-    int nx, ny;
-    double dx, dy;
-    Cell_t* cells;
+    uint64_t nx, ny;
     double dt;
-    double max_velocity;
-    double total_kinetic_energy;
-    double fluid_volume;
-} sim_state_t;
-
-
+    double w;
+    Advection_Scheme_t advectionScheme;
+    PressureSolver_Scheme_t PsolverScene;
+    struct timespec runTime;
+    double p_density;
+} sim_params_t;
 
 /* ================================================== */
 /*            GLOBAL VARIABLE DEFINITIONS             */

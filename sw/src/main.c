@@ -21,20 +21,6 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    simParams.density = 1000.0;
-    simParams.viscosity = 0.0;
-    simParams.gravity[0] = 0.0;
-    simParams.gravity[1] = -9.81;
-    simParams.timestep = 0.001;
-    simParams.cfl_number = 0.5;
-    simParams.grid_resolution[0] = 64;
-    simParams.grid_resolution[1] = 64;
-    simParams.domain_size[0] = 1.0;
-    simParams.domain_size[1] = 1.0;
-    simParams.initial_velocity[0] = 0.0;
-    simParams.initial_velocity[1] = 0.0;
-    simParams.initial_surface_height = 0.3;
-
     ASSERT_COMMON_POSIX(SimInit(&simParams), "Failed to Init Sim");
     ASSERT_COMMON_POSIX(SimStart(), "Failed to Start Sim");
 
