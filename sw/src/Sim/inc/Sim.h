@@ -43,11 +43,15 @@ typedef struct {
 } Cell_t;
 
 typedef struct {
-    double timeStep;
+    double dt;
     double nx, ny;      // num of cells
     double w;           // phtosical width of cell
     uint64_t timesteps; // numver of iterations, if INT MAX, then inf
     double overrelaxation_const;
+    Advection_Scheme_t advectionScheme;
+    PressureSolver_Scheme_t PsolverScene;
+    struct timespec runTime;
+    double p_density;
     Cell_t** cells;
 } SimState_t;
 
@@ -69,13 +73,13 @@ typedef struct {
 /*            FUNCTION PROTOTYPES (DECLARATIONS)      */
 /* ================================================== */
 
-sim_err_t SimInit(sim_params_t* pParams);
+sim_err_t Sim_Init(sim_params_t* pParams);
 
-sim_err_t SimStart(void);
+sim_err_t Sim_Start(void);
 
-sim_err_t SimStop(void);
+sim_err_t Sim_Stop(void);
 
-sim_err_t SimJoin(void);
+sim_err_t Sim_Join(void);
 
 /* ================================================== */
 /*                 MACRO FUNC  DEFINITIONS            */

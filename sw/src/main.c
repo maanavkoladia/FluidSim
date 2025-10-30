@@ -13,14 +13,14 @@ sim_params_t simParams;
 int main(int argc, char** argv) {
     LOG("Fluid Sim Starting Up");
 
-    ASSERT_COMMON_POSIX(SimInit(&simParams), "Failed to Init Sim");
-    ASSERT_COMMON_POSIX(SimStart(), "Failed to Start Sim");
+    ASSERT_COMMON_POSIX(Sim_Init(&simParams), "Failed to Init Sim");
+    ASSERT_COMMON_POSIX(Sim_Start(), "Failed to Start Sim");
 
     FOR_LOOP_COMMON(i, WAIT_TIME_S) {
         LOG("Slept for %d seconds", i);
         sleep(1);
     }
-    ASSERT_COMMON_POSIX(SimStop(), "Failed to Stop Sim");
+    ASSERT_COMMON_POSIX(Sim_Stop(), "Failed to Stop Sim");
 
     LOG("Program Exited");
     return EXIT_SUCCESS;

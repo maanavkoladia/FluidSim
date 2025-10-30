@@ -1,1 +1,56 @@
-[]
+[
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wextra",
+      "-Wall",
+      "-O0",
+      "-g3",
+      "-ImpsLibC/common",
+      "-ImpsLibC/RingBuffer/PFifo",
+      "-c",
+      "-o",
+      "build/Sim/src/Controller.o",
+      "src/Sim/src/Controller.c"
+    ],
+    "directory": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw",
+    "file": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/src/Sim/src/Controller.c",
+    "output": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/build/Sim/src/Controller.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wextra",
+      "-Wall",
+      "-O0",
+      "-g3",
+      "-ImpsLibC/common",
+      "-ImpsLibC/RingBuffer/PFifo",
+      "-c",
+      "-o",
+      "build/main.o",
+      "src/main.c"
+    ],
+    "directory": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw",
+    "file": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/src/main.c",
+    "output": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/build/main.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wextra",
+      "-Wall",
+      "-O0",
+      "-g3",
+      "-ImpsLibC/common",
+      "-ImpsLibC/RingBuffer/PFifo",
+      "-c",
+      "-o",
+      "build/Sim/src/Sim.o",
+      "src/Sim/src/Sim.c"
+    ],
+    "directory": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw",
+    "file": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/src/Sim/src/Sim.c",
+    "output": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/build/Sim/src/Sim.o"
+  }
+]

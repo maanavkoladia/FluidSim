@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-AtomicFlag_t InitSucessFlag;
+static AtomicFlag_t InitSucessFlag;
 
 static sim_params_t simParams;
 
@@ -18,20 +18,27 @@ sim_err_t SimInit(sim_params_t* pParams) {
 }
 
 sim_err_t SimStart(void) {
+
+#ifndef NDEBUG
     ASSERT_COMMON(AtomicFlag_GetStatus(&InitSucessFlag), "Init Flag not set, ie init failed");
+#endif
     ASSERT_COMMON_POSIX(ControllerInit(), "Failed to Init the Sim Controller");
     return SIM_SUCCESS;
 }
 
 sim_err_t SimJoin(void) {
+#ifndef NDEBUG
     ASSERT_COMMON(AtomicFlag_GetStatus(&InitSucessFlag), "Init Flag not set, ie init failed");
+#endif
     ASSERT_COMMON_POSIX(ControllerJoin(), "Failed to Join Controller");
     // join the TP and others
     return SIM_SUCCESS;
 }
 
 sim_err_t SimStop(void) {
+#ifndef NDEBUG
     ASSERT_COMMON(AtomicFlag_GetStatus(&InitSucessFlag), "Init Flag not set, ie init failed");
+#endif
     // this is blocking point
     ASSERT_COMMON_POSIX(ControllerStop(), "Faild to Stop Sim Controller");
     LOG("Sim Exited");
