@@ -5,6 +5,8 @@
 #include "ForLoop.h"
 #include <cstdlib>
 #include <pthread.h>
+#include <stdexcept>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -104,7 +106,10 @@ static inline sim_err_t InitSimState(sim_params_t* pParams, SimState_t** ppSimSt
     return SIM_SUCCESS;
 }
 
-static sim_err_t RunOnePassOver(void) {
+static sim_err_t RunOnePassOver(SimState_t* pSimState) {
+    ASSERT_COMMON(pSimState, "Got a NULL Sim State");
+    // run psolver
+    // run adection
     return SIM_SUCCESS;
 }
 
@@ -113,12 +118,15 @@ void* Task_Controller(void* pvArgs) {
     sim_params_t simParams;
     char msgBuf[MASTER_MSG_LEN];
     SimState_t* pSimState = NULL;
+    uint64_t cycleCount = 0;
     CopyInArgs(pvArgs, msgBuf, &simParams);
 
     ASSERT_COMMON_POSIX(InitSimState(&simParams, &pSimState), "Failed to init simState Structure");
     while (1) {
         CHECK_FLAG_STATUS(killFlag);
-        LOG("Ran TimeStep");
+        LOG("Ran TimeStep: %lu", cycleCount);
+        ASSERT_COMMON_POSIX(RunOnePassOver(pSimState), "Fialed on passover %lu", cycleCount);
+        cycleCount++;
     }
 
     // timestep,
