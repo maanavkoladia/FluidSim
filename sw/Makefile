@@ -12,15 +12,20 @@ C_FLAGS = \
 		 -Wall	\
 		 -O0	\
 		 -g3 	\
+		 -I/opt/homebrew/include \
 
 LD_FLAGS = \
+			-L/opt/homebrew/lib \
 		  -lm	\
 		  -lpthread	\
+		  -lglfw \
+    	-framework OpenGL \
 
 SRC_FILES = \
 		   src/main.c	\
 		   src/Sim/src/Controller.c	\
 		   src/Sim/src/Sim.c	\
+		   src/Renderer.c \
 		   
 
 INCLUDES = \
