@@ -3,13 +3,14 @@
 /*                      INCLUDES                      */
 /* ================================================== */
 #include <stdint.h>
+#include <time.h>
 
 /* ================================================== */
 /*                    enums & types                   */
 /* ================================================== */
 
 #define GRAVITY_CONST (-9.81)
-#define FREQ (30)
+#define FREQ (1 / 30)
 #define OVERRELAXATION (1.9)
 
 typedef enum {
@@ -28,21 +29,37 @@ typedef enum {
     RED_BLACK_GAUSS_SEIDEL
 } PressureSolver_Scheme_t;
 
+typedef enum {
+    AIR,
+    FLUID,
+    SOLID
+} CellMaterial_t;
+
 typedef struct {
     double u; // right is pos, left is negative
     double v; // op is pos, down is neg
-    double d; // diverganve
-
+    double p; // pressure
+    CellMaterial_t type;
 } Cell_t;
 
 typedef struct {
-    double gravity_const;
     double timeStep;
     double nx, ny;      // num of cells
-    double h;           // phtosical width of cell
-    uint64_t timesteps; // numver of iterations
-    double overrelaxation;
+    double w;           // phtosical width of cell
+    uint64_t timesteps; // numver of iterations, if INT MAX, then inf
+    double overrelaxation_const;
+    Cell_t** cells;
 } SimState_t;
+
+typedef struct {
+    uint64_t nx, ny;
+    double dt;
+    double w;
+    Advection_Scheme_t advectionScheme;
+    PressureSolver_Scheme_t PsolverScene;
+    struct timespec runTime;
+    double p_density;
+} sim_params_t;
 
 /* ================================================== */
 /*            GLOBAL VARIABLE DEFINITIONS             */
