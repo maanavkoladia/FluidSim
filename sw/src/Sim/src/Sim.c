@@ -1,28 +1,33 @@
 #include "../inc/Sim.h"
 #include "AtomicFlag.h"
 #include "Controller.h"
+#include "SimDebugUtils.h"
 #include <stdlib.h>
 #include <string.h>
 
 static AtomicFlag_t InitSucessFlag;
 
-static sim_params_t simParams;
+static sim_params_t simParams_glob;
+
+#define MFS_DEAD (FLAG_SET)
+#define BRICKED_UP (FLAG_CLEAR)
 
 // start the sim controller and equations tps, set the params
 sim_err_t SimInit(sim_params_t* pParams) {
-    memcpy(&simParams, pParams, sizeof(sim_params_t));
+    memcpy(&simParams_glob, pParams, sizeof(sim_params_t));
 #ifndef NDEBUG
+    PrintSimParams(&simParams_glob);
     AtomicFlag_Init(&InitSucessFlag, "Sim Init Sucess Flag", FLAG_SET);
 #endif
     return SIM_SUCCESS;
 }
 
 sim_err_t SimStart(void) {
-
 #ifndef NDEBUG
-    ASSERT_COMMON(AtomicFlag_GetStatus(&InitSucessFlag), "Init Flag not set, ie init failed");
+    ASSERT_COMMON(AtomicFlag_GetStatus(&InitSucessFlag) == BRICKED_UP,
+                  "Init Flag not set, ie init failed");
 #endif
-    ASSERT_COMMON_POSIX(ControllerInit(), "Failed to Init the Sim Controller");
+    ASSERT_COMMON_POSIX(ControllerInit(&simParams_glob), "Failed to Init the Sim Controller");
     return SIM_SUCCESS;
 }
 

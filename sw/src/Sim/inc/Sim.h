@@ -10,13 +10,15 @@
 /* ================================================== */
 
 #define GRAVITY_CONST (-9.81)
-#define FREQ (1 / 30)
-#define OVERRELAXATION (1.9)
+#define INITIAL_CELL_U_X (10)
+#define INITIAL_CELL_U_Y (10)
+#define INITIAL_CELL_P (10)
 
 typedef enum {
     SIM_SUCCESS = 0,
     SIM_ERR,
-    SIM_ERR_STARTUP
+    SIM_ERR_STARTUP,
+    SIM_ERR_CONTROLLER_SYSTEM
 } sim_err_t;
 
 typedef enum {
@@ -36,33 +38,37 @@ typedef enum {
 } CellMaterial_t;
 
 typedef struct {
-    double u; // right is pos, left is negative
-    double v; // op is pos, down is neg
-    double p; // pressure
+    double ux; // right is pos, left is negative
+    double uy; // op is pos, down is neg
+    double p;  // pressure
     CellMaterial_t type;
 } Cell_t;
 
 typedef struct {
+    uint64_t nx, ny; // num of cells
     double dt;
-    double nx, ny;      // num of cells
-    double w;           // phtosical width of cell
-    uint64_t timesteps; // numver of iterations, if INT MAX, then inf
+    double p_density;
+    double w; // phtosical width of cell
     double overrelaxation_const;
+    uint64_t PSolver_Interations;
+    struct timespec runTime;
+    uint64_t totalTimeSteps; // numver of iterations, if INT MAX, then inf
     Advection_Scheme_t advectionScheme;
     PressureSolver_Scheme_t PsolverScene;
-    struct timespec runTime;
-    double p_density;
+    uint64_t timeStepCount;
     Cell_t** cells;
 } SimState_t;
 
 typedef struct {
     uint64_t nx, ny;
     double dt;
+    double p_density;
     double w;
+    double overrelaxation_const;
+    uint64_t PSolver_Interations;
+    struct timespec runTime;
     Advection_Scheme_t advectionScheme;
     PressureSolver_Scheme_t PsolverScene;
-    struct timespec runTime;
-    double p_density;
 } sim_params_t;
 
 /* ================================================== */
