@@ -3,9 +3,7 @@
 #include "Assert_Common.h"
 #include "AtomicFlag.h"
 #include "ForLoop.h"
-#include <cstdlib>
 #include <pthread.h>
-#include <stdexcept>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>

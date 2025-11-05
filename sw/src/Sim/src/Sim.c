@@ -13,7 +13,7 @@ static sim_params_t simParams_glob;
 #define BRICKED_UP (FLAG_CLEAR)
 
 // start the sim controller and equations tps, set the params
-sim_err_t SimInit(sim_params_t* pParams) {
+sim_err_t Sim_Init(sim_params_t* pParams) {
     memcpy(&simParams_glob, pParams, sizeof(sim_params_t));
 #ifndef NDEBUG
     PrintSimParams(&simParams_glob);
@@ -22,7 +22,7 @@ sim_err_t SimInit(sim_params_t* pParams) {
     return SIM_SUCCESS;
 }
 
-sim_err_t SimStart(void) {
+sim_err_t Sim_Start(void) {
 #ifndef NDEBUG
     ASSERT_COMMON(AtomicFlag_GetStatus(&InitSucessFlag) == BRICKED_UP,
                   "Init Flag not set, ie init failed");
@@ -31,7 +31,7 @@ sim_err_t SimStart(void) {
     return SIM_SUCCESS;
 }
 
-sim_err_t SimJoin(void) {
+sim_err_t Sim_Join(void) {
 #ifndef NDEBUG
     ASSERT_COMMON(AtomicFlag_GetStatus(&InitSucessFlag), "Init Flag not set, ie init failed");
 #endif
@@ -40,7 +40,7 @@ sim_err_t SimJoin(void) {
     return SIM_SUCCESS;
 }
 
-sim_err_t SimStop(void) {
+sim_err_t Sim_Stop(void) {
 #ifndef NDEBUG
     ASSERT_COMMON(AtomicFlag_GetStatus(&InitSucessFlag), "Init Flag not set, ie init failed");
 #endif
