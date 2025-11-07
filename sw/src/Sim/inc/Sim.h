@@ -4,6 +4,7 @@
 /* ================================================== */
 #include <stdint.h>
 #include <time.h>
+#include <stdlib.h>
 
 /* ================================================== */
 /*                    enums & types                   */
@@ -42,6 +43,8 @@ typedef struct {
     double uy; // op is pos, down is neg
     double p;  // pressure
     CellMaterial_t type;
+    uint fluidNeighbors;
+
 } Cell_t;
 
 typedef struct {

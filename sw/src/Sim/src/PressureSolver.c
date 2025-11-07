@@ -2,6 +2,8 @@
 /*                      INCLUDES                      */
 /* ================================================== */
 #include <stdlib.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include "PressureSolver.h"
 
 static SimState_t* g_sim_state = NULL;
@@ -18,24 +20,36 @@ static SimState_t* g_sim_state = NULL;
 /*            FUNCTION PROTOTYPES (DECLARATIONS)      */
 /* ================================================== */
 
-double getPressure(int x, int y){
+static inline double GetPressure(uint x, uint y){
     return g_sim_state->cells[x][y].p;
 }
 
-double getVelocity(int x, int y){
-    return g_sim_state->cells[x][y].u;
+static inline double GetVelocityX(uint x, uint y){
+    return g_sim_state->cells[x][y].ux;
 }
 
-void PressureSolverCell(int x, int y){
+static inline double GetVelocityY(uint x, uint y){
+    return g_sim_state->cells[x][y].uy;
+}
+
+static inline bool IsSolid(uint x, uint y){
+    return g_sim_state->cells[x][y].type == SOLID;
+}
+
+
+
+void PressureSolverCell(uint x, uint y){
+
+
     double pressureTop = getPressure(x, y - 1);
     double pressureBot = getPressure(x, y + 1);
     double pressureLeft = getPressure(x - 1, y);
     double pressureRight = getPressure(x + 1, y);
 
-    double velocityTop = getVelocity(x, y - 1);
-    double velocityBot = getVelocity(x, y + 1);
-    double velocityLeft = getVelocity(x + 1, y);
-    double velocityRight = getVelocity(x - 1, y);
+    double velocityTop = GetVelocityY(x, y - 1);
+    double velocityBot = GetVelocityY(x, y + 1);
+    double velocityLeft = GetVelocityX(x - 1, y);
+    double velocityRight = GetVelocityX(x + 1, y);
 
     double density = g_sim_state->p_density;
     double width = g_sim_state->w;
@@ -48,8 +62,8 @@ void PressureSolverCell(int x, int y){
 
 sim_err_t PressureSolver(SimState_t* sim_state){
     g_sim_state = sim_state;
-    for(int i = 1; i < sim_state->nx - 1; i++){
-        for(int j = 1; j < sim_state->ny - 1; j++){
+    for(uint i = 1; i < sim_state->nx - 1; i++){
+        for(uint j = 1; j < sim_state->ny - 1; j++){
             PressureSolverCell(i, j);
         }
     }
