@@ -25,9 +25,8 @@ SRC_FILES = \
 		   src/main.c	\
 		   src/Sim/src/Controller.c	\
 		   src/Sim/src/Sim.c	\
-		   src/Renderer.c \
+		   src/Sim/src/SimDebugUtils.c	\
 		   
-
 INCLUDES = \
 		   -ImpsLibC/common	\
 		   -ImpsLibC/RingBuffer/PFifo	\
