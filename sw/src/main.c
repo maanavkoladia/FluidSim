@@ -6,7 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 #include "Assert_Common.h"
-#include "Renderer.h"
+//#include "Renderer.h"
 
 #define WAIT_TIME_S (3)
 
