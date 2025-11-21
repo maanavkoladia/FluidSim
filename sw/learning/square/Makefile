@@ -1,3 +1,5 @@
+UNAME_S := $(shell uname -s)
+
 CFLAGS = \
 		 -O0	\
 		 -g3	\
@@ -8,10 +10,21 @@ LD_FLAGS = 	\
 			-lpthread	\
 			-lm		\
 			-lglfw	\
-			-lGL
+			-L/opt/homebrew/lib \
+			
 
 INCLUDES =	\
-			-I../../mpsLibC/common/
+			-I../../mpsLibC/common \
+			-I/opt/homebrew/include \
+
+ifeq ($(UNAME_S),Linux)
+	LD_FLAGS += -lGL
+endif
+	
+	
+MACOS_FLAGS = \
+			-framework OpenGL \
+			
 
 all: main.c
-	gcc $(CFLAGS) $^ $(LD_FLAGS) $(INCLUDES)
+	gcc $(CFLAGS) $^ $(LD_FLAGS) $(INCLUDES) $(MACOS_FLAGS)
