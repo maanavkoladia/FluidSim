@@ -1,5 +1,5 @@
 #pragma once
-#include "Sim/inc/Sim.h"
+#include "../Sim/inc/Sim.h"
 
 int init_opengl(void);
 void cleanup_opengl(void);

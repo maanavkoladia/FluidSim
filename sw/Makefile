@@ -56,5 +56,3 @@ clean :
 	rm -rf ./$(BUILD_DIR)
 	rm -rf $(TARGET)
 	$(MAKE) -C $(LIB_DIR) clean
-
-
