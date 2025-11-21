@@ -32,35 +32,12 @@ typedef enum {
     RED_BLACK_GAUSS_SEIDEL
 } PressureSolver_Scheme_t;
 
+
 typedef enum {
     AIR,
     FLUID,
     SOLID
 } CellMaterial_t;
-
-typedef struct {
-    double ux; // right is pos, left is negative
-    double uy; // op is pos, down is neg
-    double p;  // pressure
-    CellMaterial_t type;
-    uint fluidNeighbors;
-
-} Cell_t;
-
-typedef struct {
-    uint64_t nx, ny; // num of cells
-    double dt;
-    double p_density;
-    double w; // phtosical width of cell
-    double overrelaxation_const;
-    uint64_t PSolver_Interations;
-    struct timespec runTime;
-    uint64_t totalTimeSteps; // numver of iterations, if INT MAX, then inf
-    Advection_Scheme_t advectionScheme;
-    PressureSolver_Scheme_t PsolverScene;
-    uint64_t timeStepCount;
-    Cell_t** cells;
-} SimState_t;
 
 typedef struct {
     uint64_t nx, ny;
@@ -73,6 +50,22 @@ typedef struct {
     Advection_Scheme_t advectionScheme;
     PressureSolver_Scheme_t PsolverScene;
 } sim_params_t;
+
+typedef struct {
+    double ux; // right is pos, left is negative
+    double uy; // op is pos, down is neg
+    double p;  // pressure
+    CellMaterial_t type;
+    uint fluidNeighbors;
+
+} Cell_t;
+
+
+typedef struct {
+    uint64_t nx, ny; // num of cells
+    Cell_t** cells;
+}SimSnap_t;
+
 
 /* ================================================== */
 /*            GLOBAL VARIABLE DEFINITIONS             */
