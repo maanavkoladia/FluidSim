@@ -7,6 +7,8 @@ CC = gcc
 LIB_DIR = mpsLibC
 LIB = $(LIB_DIR)/build/$(LIB_DIR).a 
 
+OS_NAME := $(shell uname -s)
+
 C_FLAGS = \
 		 -Wextra	\
 		 -Wall	\
@@ -19,7 +21,6 @@ LD_FLAGS = \
 		  -lm	\
 		  -lpthread	\
 		  -lglfw \
-    	-framework OpenGL \
 
 SRC_FILES = \
 		   src/main.c	\
@@ -29,8 +30,12 @@ SRC_FILES = \
 		   
 INCLUDES = \
 		   -ImpsLibC/common	\
-		   -ImpsLibC/RingBuffer/PFifo	\
+		   -ImpsLibC/RingBuffer/PFifo	
 
+#ifeq($(OS_NAME),Darwin)
+#	LD_FLAGS += \
+#	-framework OpenGL
+#endif
 
 OBJS = $(patsubst src/%.c,$(BUILD_DIR)/%.o,$(SRC_FILES))
 
