@@ -7,6 +7,7 @@ CC = gcc
 LIB_DIR = mpsLibC
 LIB = $(LIB_DIR)/build/$(LIB_DIR).a 
 
+
 OS_TYPE := $(shell uname -s)
 
 C_FLAGS = \
@@ -26,10 +27,13 @@ SRC_FILES = \
 		   src/Sim/src/Sim.c	\
 		   src/Sim/src/SimDebugUtils.c	\
 		   
+include src/Transform/inc/src_files.mk
+
 INCLUDES = \
 		   -ImpsLibC/common	\
 		   -ImpsLibC/RingBuffer/PFifo	\
 		   -ImpsLibC/RingBuffer/LFfifo	\
+
 
 ifeq ($(OS_TYPE),Darwin)
     LD_FLAGS += \

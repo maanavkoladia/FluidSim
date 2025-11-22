@@ -156,7 +156,7 @@ transform_err_t Transform_Dtr(void) {
     return TRANSFORM_SUCCESS;
 }
 
-transform_err_t Transform_SendNewSimState(SimSnap_t* pSimState) {
-    err_LF_Fifo_t r = LF_Fifo_TryPush(pSimSnapFifo, pSimState);
+transform_err_t Transform_SendNewSimSnap(SimSnap_t* pSimSnap) {
+    err_LF_Fifo_t r = LF_Fifo_TryPush(pSimSnapFifo, pSimSnap);
     return (r == LF_FIFO_SUCCESS) ? TRANSFORM_SUCCESS : TRANSFORM_ERR_SEND_FRAME;
 }

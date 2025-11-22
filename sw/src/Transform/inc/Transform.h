@@ -15,4 +15,4 @@ transform_err_t Transform_Init(void);
 
 transform_err_t Transform_Dtr(void);
 
-transform_err_t Tranform_SendNewSimState(SimSnap_t* pSimState);
+transform_err_t Transform_SendNewSimSnap(SimSnap_t* pSimSnap);
