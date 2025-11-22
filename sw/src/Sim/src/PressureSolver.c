@@ -90,17 +90,37 @@ sim_err_t PressureSolver(SimState_t* sim_state) {
         return SIM_ERR;
     }
 
-    Cell_t** cell_buffer = CreateCellsBuffer(sim_state->nx,sim_state->ny);
+    Cell_t** current_cells = NULL;
+    Cell_t** next_cells = NULL;
+
+    if(sim_state->using_cells1){
+        current_cells = sim_state->cells1;
+        next_cells = sim_state->cells2;
+    }else{
+        current_cells = sim_state->cells2;
+        next_cells = sim_state->cells1;
+    }
+
+
     double k = (sim_state->p_density * sim_state->w) / sim_state->dt;
     uint size_x = sim_state->nx;
     uint size_y = sim_state->ny;
-    
+
     for(int i = 0; i < NUMBER_OF_PSLOVE_ITERATIONS; i++){
-        PressureSolveIteration(sim_state, cell_buffer);
-        UpdateVelocities(cell_buffer,size_x, size_y, k);
+        PressureSolveIteration(current_cells, next_cells);
+        // Ping-pong: swap current and next
+        Cell_t **tmp   = current_cells;
+        current_cells  = next_cells;
+        next_cells     = tmp;
     }
-    FreeCells(sim_state->cells,size_x);
-    sim_state->cells = cell_buffer;
+
+    UpdateVelocities(next_cells,size_x, size_y, k);
+    // Update the flag so everyone else knows which buffer is active
+    if (current_cells == sim_state->cells1) {
+        sim_state->using_cells1 = true;
+    } else {
+        sim_state->using_cells1 = false;
+    }
 
     return SIM_SUCCESS;
 }
