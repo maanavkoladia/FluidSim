@@ -172,7 +172,7 @@ static void* Task_Controller(void* pvArgs) {
     ASSERT_COMMON_POSIX(InitSimState(&simParams, &pSimState), "Failed to init simState Structure");
     while (1) {
         CHECK_FLAG_STATUS(killFlag);
-        LOG("Ran TimeStep: %lu", cycleCount);
+        // LOG("Ran TimeStep: %lu", cycleCount);
         ASSERT_COMMON_POSIX(RunOnePassOver(pSimState), "Fialed on passover %lu", cycleCount);
         cycleCount++;
         // sleep(1);

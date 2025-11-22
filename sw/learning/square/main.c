@@ -1,33 +1,37 @@
 #include "Assert_Common.h"
 #include "LOG.h"
 #include <GLFW/glfw3.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define HEIGHT (480)
-#define WIDTH  (640)
+#define WIDTH (640)
 
-#define MAX_POINTS   200000
-#define MAX_STROKES  5000
+#define MAX_POINTS 200000
+#define MAX_STROKES 5000
 
-typedef struct { float x, y; } Pt;
-typedef struct { float r, g, b; } Color;
+typedef struct {
+    float x, y;
+} Pt;
+typedef struct {
+    float r, g, b;
+} Color;
 
 static GLFWwindow* gWindow = NULL;
 static int gWinW = WIDTH, gWinH = HEIGHT;
 
-static Pt     gPoints[MAX_POINTS];
-static int    gPointCount = 0;
+static Pt gPoints[MAX_POINTS];
+static int gPointCount = 0;
 
-static int    gStrokeStarts[MAX_STROKES];   // index into gPoints where each stroke starts
-static float  gStrokeSizes[MAX_STROKES];
-static Color  gStrokeColors[MAX_STROKES];
-static int    gStrokeCount = 0;
+static int gStrokeStarts[MAX_STROKES]; // index into gPoints where each stroke starts
+static float gStrokeSizes[MAX_STROKES];
+static Color gStrokeColors[MAX_STROKES];
+static int gStrokeCount = 0;
 
-static int    gMouseDown = 0;
-static Color  gCurrentColor = {1.0f, 0.2f, 0.1f}; // default red-ish
-static float  gCurrentSize  = 3.0f;
+static int gMouseDown = 0;
+static Color gCurrentColor = {1.0f, 0.2f, 0.1f}; // default red-ish
+static float gCurrentSize = 3.0f;
 
 // ----------------- helpers -----------------
 
@@ -41,7 +45,7 @@ static void start_new_stroke() {
     if (gStrokeCount >= MAX_STROKES) return;
     gStrokeStarts[gStrokeCount] = gPointCount;
     gStrokeColors[gStrokeCount] = gCurrentColor;
-    gStrokeSizes[gStrokeCount]  = gCurrentSize;
+    gStrokeSizes[gStrokeCount] = gCurrentSize;
     gStrokeCount++;
 }
 
@@ -53,12 +57,12 @@ static void push_point(float x, float y) {
 }
 
 static void clear_canvas() {
-    gPointCount  = 0;
+    gPointCount = 0;
     gStrokeCount = 0;
 }
 
-// Very simple PPM writer (binary P6). glReadPixels gives bottom-left origin; PPM expects top row first.
-// We flip the rows while writing.
+// Very simple PPM writer (binary P6). glReadPixels gives bottom-left origin; PPM expects top row
+// first. We flip the rows while writing.
 static int save_framebuffer_ppm(const char* path, int w, int h) {
     FILE* f = fopen(path, "wb");
     if (!f) return 0;
@@ -67,7 +71,10 @@ static int save_framebuffer_ppm(const char* path, int w, int h) {
     fprintf(f, "P6\n%d %d\n255\n", w, h);
 
     unsigned char* buf = (unsigned char*)malloc((size_t)w * (size_t)h * 3);
-    if (!buf) { fclose(f); return 0; }
+    if (!buf) {
+        fclose(f);
+        return 0;
+    }
 
     glPixelStorei(GL_PACK_ALIGNMENT, 1);
     glReadBuffer(GL_FRONT); // read the front buffer (already drawn)
@@ -87,7 +94,7 @@ static int save_framebuffer_ppm(const char* path, int w, int h) {
 // ----------------- callbacks -----------------
 
 static void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
-    gWinW = (width  > 0) ? width  : 1;
+    gWinW = (width > 0) ? width : 1;
     gWinH = (height > 0) ? height : 1;
     glViewport(0, 0, gWinW, gWinH);
 }
@@ -122,43 +129,62 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
     if (action != GLFW_PRESS) return;
 
     switch (key) {
-        case GLFW_KEY_ESCAPE:
-            glfwSetWindowShouldClose(window, 1);
-            break;
-        case GLFW_KEY_C: // clear
-            clear_canvas();
-            break;
-        case GLFW_KEY_S: { // save
-            char path[128];
-            // simple incrementing filename: paint_XXXX.ppm
-            static int sshot = 0;
-            snprintf(path, sizeof(path), "paint_%04d.ppm", sshot++);
-            if (save_framebuffer_ppm(path, gWinW, gWinH)) {
-                LOG("Saved %s", path);
-            } else {
-                LOG("Failed to save screenshot");
-            }
-        } break;
+    case GLFW_KEY_ESCAPE:
+        glfwSetWindowShouldClose(window, 1);
+        break;
+    case GLFW_KEY_C: // clear
+        clear_canvas();
+        break;
+    case GLFW_KEY_S: { // save
+        char path[128];
+        // simple incrementing filename: paint_XXXX.ppm
+        static int sshot = 0;
+        snprintf(path, sizeof(path), "paint_%04d.ppm", sshot++);
+        if (save_framebuffer_ppm(path, gWinW, gWinH)) {
+            LOG("Saved %s", path);
+        } else {
+            LOG("Failed to save screenshot");
+        }
+    } break;
 
-        // size controls (optional nicety)
-        case GLFW_KEY_LEFT_BRACKET:  // '[' smaller
-            gCurrentSize = (gCurrentSize > 1.0f) ? (gCurrentSize - 1.0f) : 1.0f;
-            break;
-        case GLFW_KEY_RIGHT_BRACKET: // ']' bigger
-            gCurrentSize += 1.0f;
-            break;
+    // size controls (optional nicety)
+    case GLFW_KEY_LEFT_BRACKET: // '[' smaller
+        gCurrentSize = (gCurrentSize > 1.0f) ? (gCurrentSize - 1.0f) : 1.0f;
+        break;
+    case GLFW_KEY_RIGHT_BRACKET: // ']' bigger
+        gCurrentSize += 1.0f;
+        break;
 
-        // color palette 1–9
-        case GLFW_KEY_1: gCurrentColor = (Color){1.0f, 0.2f, 0.1f}; break; // red-ish
-        case GLFW_KEY_2: gCurrentColor = (Color){0.2f, 0.8f, 0.2f}; break; // green
-        case GLFW_KEY_3: gCurrentColor = (Color){0.2f, 0.4f, 1.0f}; break; // blue
-        case GLFW_KEY_4: gCurrentColor = (Color){1.0f, 0.8f, 0.2f}; break; // yellow
-        case GLFW_KEY_5: gCurrentColor = (Color){1.0f, 0.4f, 0.8f}; break; // pink
-        case GLFW_KEY_6: gCurrentColor = (Color){0.2f, 1.0f, 1.0f}; break; // cyan
-        case GLFW_KEY_7: gCurrentColor = (Color){1.0f, 1.0f, 1.0f}; break; // white
-        case GLFW_KEY_8: gCurrentColor = (Color){0.6f, 0.4f, 0.2f}; break; // brown
-        case GLFW_KEY_9: gCurrentColor = (Color){0.9f, 0.9f, 0.9f}; break; // light gray
-        default: break;
+    // color palette 1–9
+    case GLFW_KEY_1:
+        gCurrentColor = (Color){1.0f, 0.2f, 0.1f};
+        break; // red-ish
+    case GLFW_KEY_2:
+        gCurrentColor = (Color){0.2f, 0.8f, 0.2f};
+        break; // green
+    case GLFW_KEY_3:
+        gCurrentColor = (Color){0.2f, 0.4f, 1.0f};
+        break; // blue
+    case GLFW_KEY_4:
+        gCurrentColor = (Color){1.0f, 0.8f, 0.2f};
+        break; // yellow
+    case GLFW_KEY_5:
+        gCurrentColor = (Color){1.0f, 0.4f, 0.8f};
+        break; // pink
+    case GLFW_KEY_6:
+        gCurrentColor = (Color){0.2f, 1.0f, 1.0f};
+        break; // cyan
+    case GLFW_KEY_7:
+        gCurrentColor = (Color){1.0f, 1.0f, 1.0f};
+        break; // white
+    case GLFW_KEY_8:
+        gCurrentColor = (Color){0.6f, 0.4f, 0.2f};
+        break; // brown
+    case GLFW_KEY_9:
+        gCurrentColor = (Color){0.9f, 0.9f, 0.9f};
+        break; // light gray
+    default:
+        break;
     }
 }
 
@@ -168,7 +194,7 @@ static void draw_strokes() {
     // draw each stroke as its own line strip with its own color/width
     for (int s = 0; s < gStrokeCount; ++s) {
         int start = gStrokeStarts[s];
-        int end   = (s == gStrokeCount - 1) ? gPointCount : gStrokeStarts[s + 1];
+        int end = (s == gStrokeCount - 1) ? gPointCount : gStrokeStarts[s + 1];
         int count = end - start;
 
         if (count <= 0) continue;
