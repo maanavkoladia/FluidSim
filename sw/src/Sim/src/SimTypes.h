@@ -2,6 +2,7 @@
 
 #include "../inc/Sim.h"
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef struct {
     uint64_t nx, ny; // num of cells

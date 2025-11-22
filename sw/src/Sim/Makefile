@@ -2,8 +2,11 @@
 #  Compiler settings
 # -----------------------------
 CC       := gcc
-CFLAGS   := -Wall -Wextra -Werror -O2 -g -Iinc
-LDFLAGS  := 
+CFLAGS   := -Wall -Wextra -Werror -O2 -g \
+			-Iinc \
+			-I/home/karemeldin1/379k_project/FluidSim/sw/mpsLibC/common
+
+LDFLAGS  :=
 TARGET   := sim
 
 # -----------------------------

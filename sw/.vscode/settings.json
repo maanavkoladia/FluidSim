@@ -2,6 +2,7 @@
     "files.associations": {
         "atomicflag.h": "c",
         "pressuresolver.h": "c",
-        "stdbool.h": "c"
+        "stdbool.h": "c",
+        "transform.h": "c"
     }
 }

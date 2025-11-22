@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include "../../Transform/inc/Transform.h"
 
 #define TASK_CONTROLLER_RET (NULL)
 #define MASTER_MSG_LEN (64)
@@ -42,6 +43,8 @@ static inline void CopyInArgs(void* pvArgsIn, char* msg, sim_params_t* pParamsOu
 }
 
 Cell_t** GetCells(SimState_t* state){
+    if(!state)return NULL;
+
     if(state->using_cells1){
         return state->cells1;
     }else{
@@ -53,7 +56,7 @@ Cell_t** GetCells(SimState_t* state){
 Cell_t** CreateCellsBuffer(uint nx, uint ny){
     Cell_t** return_val = NULL;
     return_val = (Cell_t**)malloc(sizeof(Cell_t*) * nx);
-    for(int i = 0; i < nx; i++){
+    for(uint i = 0; i < nx; i++){
         return_val[i] = malloc(sizeof(Cell_t) * ny);
     }
     return return_val;
@@ -65,32 +68,34 @@ static inline sim_err_t AllocateCells(SimState_t* pSimStateBuf) {
     return SIM_SUCCESS;
 }
 
-sim_err_t InsertBounds(Cell_t** init_cells){
-        FOR_LOOP_COMMON(i, pSimStateBuf->nx) {
-        FOR_LOOP_COMMON(j, pSimStateBuf->ny) {
+sim_err_t InsertBounds(Cell_t** init_cells, uint nx, uint ny){
+        FOR_LOOP_COMMON(i,nx) {
+        FOR_LOOP_COMMON(j,ny) {
             init_cells[i][j].type = FLUID;
             init_cells[i][j].ux = INITIAL_CELL_U_X;
             init_cells[i][j].uy = INITIAL_CELL_U_Y;
             init_cells[i][j].p = INITIAL_CELL_P;
         }
     }
-    FOR_LOOP_COMMON(i, pSimStateBuf->nx) {
+    FOR_LOOP_COMMON(i,nx) {
         init_cells[i][0].type = SOLID;
-        init_cells[i][pSimStateBuf->ny - 1].type = SOLID;
+        init_cells[i][ny - 1].type = SOLID;
     }
 
-    FOR_LOOP_COMMON(i, pSimStateBuf->ny) {
+    FOR_LOOP_COMMON(i,ny) {
         init_cells[0][i].type = SOLID;
-        init_cells[pSimStateBuf->nx - 1][i].type = SOLID;
+        init_cells[nx - 1][i].type = SOLID;
     }
+
+    return SIM_SUCCESS;
 }
 
 static inline sim_err_t InitCellBoundaries(SimState_t* pSimStateBuf) {
     ASSERT_COMMON(pSimStateBuf, "PSimStatebuf is NULL");
     ASSERT_COMMON(GetCells(pSimStateBuf), "cells are null wtf");
     // set the bounds to 0
-    InsertBounds(pSimStateBuf->cells1);
-    InsertBounds(pSimStateBuf->cells2);
+    InsertBounds(pSimStateBuf->cells1,pSimStateBuf->nx,pSimStateBuf->ny);
+    InsertBounds(pSimStateBuf->cells2,pSimStateBuf->nx,pSimStateBuf->ny);
     return SIM_SUCCESS;
 
 }
@@ -120,7 +125,8 @@ static inline sim_err_t InitSimState(sim_params_t* pParams, SimState_t** ppSimSt
     pSimStateBuf->totalTimeSteps = (double)pSimStateBuf->runTime.tv_sec / pSimStateBuf->dt;
     pSimStateBuf->timeStepCount = 0;
     pSimStateBuf->cells1 = NULL;
-    pSimStateBuf->cells1 = NULL;
+    pSimStateBuf->cells2 = NULL;
+    pSimStateBuf->using_cells1 = true;
     ASSERT_COMMON_POSIX(AllocateCells(pSimStateBuf), "Failed to ALlocate the cell matrix");
     InitCellBoundaries(pSimStateBuf);
     // allocated cells
