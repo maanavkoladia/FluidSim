@@ -55,7 +55,7 @@ typedef struct {
     double uy; // op is pos, down is neg
     double p;  // pressure
     CellMaterial_t type;
-    uint64_t fluidNeighbors;
+    uint fluidNeighbors;
 
 } Cell_t;
 
