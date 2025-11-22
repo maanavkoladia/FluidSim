@@ -30,9 +30,9 @@ SRC_FILES = \
 include src/Transform/inc/src_files.mk
 
 INCLUDES = \
-		   -ImpsLibC/common	\
-		   -ImpsLibC/RingBuffer/PFifo	\
-		   -ImpsLibC/RingBuffer/LFfifo	\
+		   -I$(LIB_DIR)/common	\
+		   -I$(LIB_DIR)/RingBuffer/PFifo	\
+		   -I$(LIB_DIR)/RingBuffer/LFfifo	\
 
 
 ifeq ($(OS_TYPE),Darwin)
