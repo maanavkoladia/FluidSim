@@ -14,11 +14,11 @@ typedef double pressure_t;
 typedef double velocity_t;
 
 typedef struct {
-    pressure_t *pressure;
-    int nx; //grid dim x
-    int ny; //grid dim y
-    velocity_t ux; //Velocity X
-    velocity_t uy; //Velocity Y
+    pressure_t* pressure;
+    int nx;         // grid dim x
+    int ny;         // grid dim y
+    velocity_t* ux; // Velocity X
+    velocity_t* uy; // Velocity Y
 } Render_Frame_t;
 
 render_err_t Render_Init(void);
