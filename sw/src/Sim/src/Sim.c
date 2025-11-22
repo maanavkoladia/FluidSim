@@ -17,7 +17,7 @@ sim_err_t Sim_Init(sim_params_t* pParams) {
     memcpy(&simParams_glob, pParams, sizeof(sim_params_t));
 #ifndef NDEBUG
     PrintSimParams(&simParams_glob);
-    AtomicFlag_Init(&InitSucessFlag, "Sim Init Sucess Flag", FLAG_SET);
+    AtomicFlag_Init(&InitSucessFlag, "Sim Init Sucess Flag", BRICKED_UP);
 #endif
     return SIM_SUCCESS;
 }
@@ -42,7 +42,8 @@ sim_err_t Sim_Join(void) {
 
 sim_err_t Sim_Stop(void) {
 #ifndef NDEBUG
-    ASSERT_COMMON(AtomicFlag_GetStatus(&InitSucessFlag), "Init Flag not set, ie init failed");
+    ASSERT_COMMON(AtomicFlag_GetStatus(&InitSucessFlag) == BRICKED_UP,
+                  "Init Flag not set, ie init failed");
 #endif
     // this is blocking point
     ASSERT_COMMON_POSIX(ControllerStop(), "Faild to Stop Sim Controller");
