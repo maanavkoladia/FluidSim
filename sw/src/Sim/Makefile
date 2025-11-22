@@ -1,54 +1,54 @@
-PROJECT   = FluidSim
-BUILD_DIR = build
-TARGET    = $(PROJECT).elf
+# -----------------------------
+#  Compiler settings
+# -----------------------------
+CC       := gcc
+CFLAGS   := -Wall -Wextra -Werror -O2 -g -Iinc
+LDFLAGS  := 
+TARGET   := sim
 
-CC = gcc
+# -----------------------------
+#  Directories
+# -----------------------------
+SRC_DIR  := src
+INC_DIR  := inc
+BUILD_DIR := build
 
-LIB_DIR = mpsLibC
-LIB     = $(LIB_DIR)/build/$(LIB_DIR).a
+# -----------------------------
+#  Source / Object files
+# -----------------------------
+SRCS := $(wildcard $(SRC_DIR)/*.c)
+OBJS := $(SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 
-OS_NAME := $(shell uname -s)
-
-C_FLAGS = \
-	-Wextra \
-	-Wall   \
-	-O0     \
-	-g3     \
-	-I/opt/homebrew/include \
-	-Iinc
-
-LD_FLAGS = \
-	-L/opt/homebrew/lib \
-	-lm \
-	-lpthread \
-	-lglfw
-
-SRC_FILES = \
-	src/PressureSolver.c \
-	src/Conroller.c
-
-OBJS = $(patsubst src/%.c,$(BUILD_DIR)/%.o,$(SRC_FILES))
-
-.PHONY: clean all
-
+# -----------------------------
+#  Default rule
+# -----------------------------
 all: $(TARGET)
 
-# build library
-$(LIB):
-	$(MAKE) -C $(LIB_DIR) all
+# -----------------------------
+#  Link final executable
+# -----------------------------
+$(TARGET): $(OBJS)
+	$(CC) $(OBJS) -o $@ $(LDFLAGS)
 
-# final binary links against library
-$(TARGET): $(OBJS) $(LIB) | $(BUILD_DIR)
-	$(CC) $(OBJS) $(LIB) -o $@ $(LD_FLAGS)
+# -----------------------------
+#  Build object files
+# -----------------------------
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/%.o: src/%.c | $(BUILD_DIR)
-	mkdir -p $(dir $@)
-	$(CC) $(C_FLAGS) -c $< -o $@
-
+# -----------------------------
+#  Create build directory if needed
+# -----------------------------
 $(BUILD_DIR):
-	mkdir -p $@
+	mkdir -p $(BUILD_DIR)
 
+# -----------------------------
+#  Clean builds
+# -----------------------------
 clean:
-	rm -rf $(BUILD_DIR)
-	rm -f $(TARGET)
-	$(MAKE) -C $(LIB_DIR) clean
+	rm -rf $(BUILD_DIR) $(TARGET)
+
+# -----------------------------
+#  Phony targets
+# -----------------------------
+.PHONY: all clean
