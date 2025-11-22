@@ -5,11 +5,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include "SimTypes.h"
 
 
 
-static SimState_t* g_sim_state = NULL;
 
 /* ================================================== */
 /*                    enums & types                   */
@@ -23,42 +21,35 @@ static SimState_t* g_sim_state = NULL;
 /*            FUNCTION PROTOTYPES (DECLARATIONS)      */
 /* ================================================== */
 
-static inline double GetPressure(uint x, uint y) {
-    return g_sim_state->cells[x][y].p;
+static inline double GetPressure(Cell_t** cells,uint x, uint y) {
+
+    return cells[x][y].p;
 }
 
-static inline double GetVelocityX(uint x, uint y) {
-    return g_sim_state->cells[x][y].ux;
+static inline double GetVelocityX(Cell_t** cells,uint x, uint y) {
+    return cells[x][y].ux;
 }
 
-static inline double GetVelocityY(uint x, uint y) {
-    return g_sim_state->cells[x][y].uy;
+static inline double GetVelocityY(Cell_t** cells,uint x, uint y) {
+    return cells[x][y].uy;
 }
 
-static inline bool IsSolid(uint x, uint y) {
-    return g_sim_state->cells[x][y].type == SOLID;
+static inline bool IsSolid(Cell_t** cells,uint x, uint y) {
+    return cells[x][y].type == SOLID;
 }
 
-Cell_t** CreateCellsBuffer(uint nx, uint ny){
-    Cell_t** return_val = NULL;
-    return_val = malloc(sizeof(Cell_t*) * nx);
-    for(int i = 0; i < nx; i++){
-        return_val[i] = malloc(sizeof(Cell_t) * ny);
-    }
-    return return_val;
-}
 
-void PressureSolverCell(uint x, uint y, SimState_t* g_sim_state, Cell_t** cell_buffer) {
 
-    double pressureTop = getPressure(x, y - 1);
-    double pressureBot = getPressure(x, y + 1);
-    double pressureLeft = getPressure(x - 1, y);
-    double pressureRight = getPressure(x + 1, y);
+void PressureSolverCell(uint x, uint y, SimState_t* g_sim_state,Cell_t** current_cells , Cell_t** cell_buffer) {
+    double pressureTop = GetPressure(current_cells,x, y - 1);
+    double pressureBot = GetPressure(current_cells,x, y + 1);
+    double pressureLeft = GetPressure(current_cells,x - 1, y);
+    double pressureRight = GetPressure(current_cells,x + 1, y);
 
-    double velocityTop = GetVelocityY(x, y - 1);
-    double velocityBot = GetVelocityY(x, y + 1);
-    double velocityLeft = GetVelocityX(x - 1, y);
-    double velocityRight = GetVelocityX(x + 1, y);
+    double velocityTop = GetVelocityY(current_cells,x, y - 1);
+    double velocityBot = GetVelocityY(current_cells,x, y + 1);
+    double velocityLeft = GetVelocityX(current_cells,x - 1, y);
+    double velocityRight = GetVelocityX(current_cells,x + 1, y);
 
     double density = g_sim_state->p_density;
     double width = g_sim_state->w;
@@ -70,20 +61,16 @@ void PressureSolverCell(uint x, uint y, SimState_t* g_sim_state, Cell_t** cell_b
         (pressureSum - (density * width * (initVelocityCalc) / deltaTime)) / 4;
 }
 
-sim_err_t PressureSolveIteration(SimState_t* sim_state, Cell_t** buffer){
+sim_err_t PressureSolveIteration(SimState_t* sim_state,Cell_t** cells, Cell_t** buffer){
     for (uint i = 1; i < sim_state->nx - 1; i++) {
             for (uint j = 1; j < sim_state->ny - 1; j++) {
-                PressureSolverCell(i, j,sim_state,buffer);
+                PressureSolverCell(i, j,sim_state,cells,buffer);
             }
         }
     return SIM_SUCCESS;
 }
 
-void FreeCells(Cell_t **cells, uint nx) {
-    for (uint i = 0; i < nx; i++)
-        free(cells[i]);
-    free(cells);
-}
+
 
 sim_err_t PressureSolver(SimState_t* sim_state) {
     if(sim_state == NULL){
@@ -107,7 +94,7 @@ sim_err_t PressureSolver(SimState_t* sim_state) {
     uint size_y = sim_state->ny;
 
     for(int i = 0; i < NUMBER_OF_PSLOVE_ITERATIONS; i++){
-        PressureSolveIteration(current_cells, next_cells);
+        PressureSolveIteration(sim_state,current_cells, next_cells);
         // Ping-pong: swap current and next
         Cell_t **tmp   = current_cells;
         current_cells  = next_cells;
@@ -127,16 +114,16 @@ sim_err_t PressureSolver(SimState_t* sim_state) {
 
 sim_err_t UpdateVelocities(Cell_t** cell_buffer, uint nx,uint ny, uint k){
     if(!cell_buffer) return SIM_ERR;
-    for(int x = 0; x < nx; x++){
-        for(int y = 0; y < ny; y++){
+    for(uint x = 0; x < nx; x++){
+        for(uint y = 0; y < ny; y++){
             //Update Horizontal Velocity
-            double pressureRight = GetPressure(x + 1, y);
-            double pressureLeft = GetPressure(x - 1, y);
+            double pressureRight = GetPressure(cell_buffer,x + 1, y);
+            double pressureLeft = GetPressure(cell_buffer,x - 1, y);
             cell_buffer[x][y].ux -= k * (pressureRight - pressureLeft);
             //Update Vertical Velocity
-            double pressureTop = GetPressure(x, y - 1);
-            double pressureBottom = GetPressure(x, y + 1);
-            cell_buffer[x][y].uy -= k * (pressureRight - pressureLeft);
+            double pressureTop = GetPressure(cell_buffer,x, y - 1);
+            double pressureBottom = GetPressure(cell_buffer,x, y + 1);
+            cell_buffer[x][y].uy -= k * (pressureTop - pressureBottom);
         }
     }
     return SIM_SUCCESS;

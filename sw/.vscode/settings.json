@@ -1,5 +1,7 @@
 {
     "files.associations": {
-        "atomicflag.h": "c"
+        "atomicflag.h": "c",
+        "pressuresolver.h": "c",
+        "stdbool.h": "c"
     }
 }

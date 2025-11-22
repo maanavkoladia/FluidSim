@@ -24,7 +24,8 @@ LD_FLAGS = \
 	-lglfw
 
 SRC_FILES = \
-	src/PressureSolver.c
+	src/PressureSolver.c \
+	src/Conroller.c
 
 OBJS = $(patsubst src/%.c,$(BUILD_DIR)/%.o,$(SRC_FILES))
 
