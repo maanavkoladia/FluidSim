@@ -22,9 +22,7 @@ typedef struct {
 } Render_Frame_t;
 
 render_err_t Render_Init(void);
-
 render_err_t Render_Dtr(void);
-
 render_err_t Render_Send_Frame(Render_Frame_t* pFrameIn);
 
 // render_err_t Render_Frame_Init(Render_Frame_t** pFrameOut, ...);

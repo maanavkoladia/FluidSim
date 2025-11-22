@@ -21,6 +21,7 @@ LD_FLAGS = \
 		  -lpthread	\
 		  -lglfw \
 		  -fsanitize=address \
+		  -lGL
 
 SRC_FILES = \
 			src/main.c	\
@@ -30,6 +31,7 @@ SRC_FILES = \
 			src/Sim/src/PressureSolver.c \
 			src/Sim/src/SimDebugUtils.c \
 			src/Transform/src/Transform.c \
+			src/Render/src/Renderer.c	\
 		   
 INCLUDES = \
 		   -I$(LIB_DIR)/common	\
