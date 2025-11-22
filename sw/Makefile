@@ -14,10 +14,8 @@ C_FLAGS = \
 		 -Wall	\
 		 -O0	\
 		 -g3 	\
-		 -I/opt/homebrew/include \
 
 LD_FLAGS = \
-			-L/opt/homebrew/lib \
 		  -lm	\
 		  -lpthread	\
 		  -lglfw \
@@ -34,7 +32,16 @@ INCLUDES = \
 		   -ImpsLibC/RingBuffer/LFfifo	\
 
 ifeq ($(OS_TYPE),Darwin)
-    LD_FLAGS += -framework OpenGL
+    LD_FLAGS += \
+				-framework OpenGL	\
+				-L/opt/homebrew/lib
+
+	C_FLAGS += \
+			   -I/opt/homebrew/include 
+
+endif
+
+ifeq ($(OS_TYPE),Linux)
 endif
 
 

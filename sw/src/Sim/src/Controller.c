@@ -3,6 +3,7 @@
 #include "Assert_Common.h"
 #include "AtomicFlag.h"
 #include "ForLoop.h"
+#include "SimTypes.h"
 #include <pthread.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -111,7 +112,7 @@ static sim_err_t RunOnePassOver(SimState_t* pSimState) {
     return SIM_SUCCESS;
 }
 
-void* Task_Controller(void* pvArgs) {
+static void* Task_Controller(void* pvArgs) {
     LOG("Task_Controller Started Up");
     sim_params_t simParams;
     char msgBuf[MASTER_MSG_LEN];
