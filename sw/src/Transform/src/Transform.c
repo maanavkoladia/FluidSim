@@ -125,7 +125,8 @@ static void* Task_TransformService(void* pvArgs) {
         ASSERT_COMMON_POSIX(GetRenderBuf(&pRenderFrame, pSimSnap->nx * pSimSnap->ny),
                             "Failed to get render buf");
         ASSERT_COMMON_POSIX(ConvertSnapToRenderFrame(pSimSnap, pRenderFrame), "Faield to convert");
-        ASSERT_COMMON_POSIX(Render_Send_Frame(pRenderFrame), "Fialed to send to rednered serive");
+        // ASSERT_COMMON_POSIX(Render_Send_Frame(pRenderFrame), "Fialed to send to rednered
+        // serive");
     }
 
     return NULL;
@@ -140,7 +141,7 @@ transform_err_t Transform_Init(void) {
 
     ASSERT_COMMON_POSIX(pthread_create(&TransformService_th, NULL, Task_TransformService, NULL),
                         "Failed to launch the Transform service thread");
-
+    LOG("Tranform Service Init Probably Success");
     return TRANSFORM_SUCCESS;
 }
 
@@ -153,6 +154,7 @@ transform_err_t Transform_Dtr(void) {
 
     ASSERT_COMMON_POSIX(LF_Fifo_Dtr(pSimSnapFifo), "Failed to destroy FIFO");
 
+    LOG("Tranform Service Dtr Probably Success");
     return TRANSFORM_SUCCESS;
 }
 
