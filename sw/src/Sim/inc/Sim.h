@@ -32,7 +32,6 @@ typedef enum {
     RED_BLACK_GAUSS_SEIDEL
 } PressureSolver_Scheme_t;
 
-
 typedef enum {
     AIR,
     FLUID,
@@ -60,12 +59,10 @@ typedef struct {
 
 } Cell_t;
 
-
 typedef struct {
     uint64_t nx, ny; // num of cells
     Cell_t** cells;
-}SimSnap_t;
-
+} SimSnap_t;
 
 /* ================================================== */
 /*            GLOBAL VARIABLE DEFINITIONS             */

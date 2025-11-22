@@ -7,17 +7,15 @@ CC = gcc
 LIB_DIR = mpsLibC
 LIB = $(LIB_DIR)/build/$(LIB_DIR).a 
 
-OS_NAME := $(shell uname -s)
+OS_TYPE := $(shell uname -s)
 
 C_FLAGS = \
 		 -Wextra	\
 		 -Wall	\
 		 -O0	\
 		 -g3 	\
-		 -I/opt/homebrew/include \
 
 LD_FLAGS = \
-			-L/opt/homebrew/lib \
 		  -lm	\
 		  -lpthread	\
 		  -lglfw \
@@ -30,7 +28,21 @@ SRC_FILES = \
 		   
 INCLUDES = \
 		   -ImpsLibC/common	\
-		   -ImpsLibC/RingBuffer/PFifo	
+		   -ImpsLibC/RingBuffer/PFifo	\
+		   -ImpsLibC/RingBuffer/LFfifo	\
+
+ifeq ($(OS_TYPE),Darwin)
+    LD_FLAGS += \
+				-framework OpenGL	\
+				-L/opt/homebrew/lib
+
+	C_FLAGS += \
+			   -I/opt/homebrew/include 
+
+endif
+
+ifeq ($(OS_TYPE),Linux)
+endif
 
 #ifeq($(OS_NAME),Darwin)
 #	LD_FLAGS += \
