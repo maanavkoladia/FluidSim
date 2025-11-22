@@ -87,6 +87,15 @@ fail:
     return TRANSFORM_ERR_SYSTEM;
 }
 
+static transform_err_t YeildRenderBuf(Render_Frame_t* pRender) {
+    ASSERT_COMMON(pRender && pRender->pressure && pRender->ux && pRender->uy, "Got NULL ptr");
+    free(pRender);
+    free(pRender->pressure);
+    free(pRender->ux);
+    free(pRender->uy);
+    return TRANSFORM_SUCCESS;
+}
+
 static transform_err_t ConvertSnapToRenderFrame(SimSnap_t* pSnap, Render_Frame_t* pRenderFrame) {
     ASSERT_COMMON(pSnap, "Got a NULL pSnap");
     ASSERT_COMMON(pRenderFrame, "Got a NULL pRenderFrame");
@@ -105,7 +114,6 @@ static transform_err_t ConvertSnapToRenderFrame(SimSnap_t* pSnap, Render_Frame_t
 
 static void* Task_TransformService(void* pvArgs) {
     (void)pvArgs;
-
     LOG("Task_TransformService Started Up");
     while (1) {
 
@@ -114,7 +122,6 @@ static void* Task_TransformService(void* pvArgs) {
         SimSnap_t* pSimSnap = NULL;
         Render_Frame_t* pRenderFrame = NULL;
         err_LF_Fifo_t r = LF_Fifo_TimedPop(pSimSnapFifo, &pSimSnap, &timeOut);
-        
 
         if (r == LF_FIFO_FAIL_TIMED_POP) {
             continue;
@@ -128,6 +135,7 @@ static void* Task_TransformService(void* pvArgs) {
         ASSERT_COMMON_POSIX(ConvertSnapToRenderFrame(pSimSnap, pRenderFrame), "Faield to convert");
         // ASSERT_COMMON_POSIX(Render_Send_Frame(pRenderFrame), "Fialed to send to rednered
         // serive");
+        ASSERT_COMMON_POSIX(YeildRenderBuf(pRenderFrame), "Fialed to free render frame");
         ASSERT_COMMON_POSIX(Sim_SimSnap_Yeild(pSimSnap), "Aint no way");
     }
 
