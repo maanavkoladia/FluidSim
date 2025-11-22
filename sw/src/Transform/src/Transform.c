@@ -89,10 +89,11 @@ fail:
 
 static transform_err_t YeildRenderBuf(Render_Frame_t* pRender) {
     ASSERT_COMMON(pRender && pRender->pressure && pRender->ux && pRender->uy, "Got NULL ptr");
-    free(pRender);
     free(pRender->pressure);
     free(pRender->ux);
     free(pRender->uy);
+    free(pRender);
+
     return TRANSFORM_SUCCESS;
 }
 

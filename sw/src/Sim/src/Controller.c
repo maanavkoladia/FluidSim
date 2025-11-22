@@ -66,6 +66,8 @@ sim_err_t Sim_SimSnap_Yeild(SimSnap_t* pSnap){
     ASSERT_COMMON(pSnap,"NULL snap yeild");
     FreeCells(pSnap->cells,pSnap->nx);
     free(pSnap);
+    LOG("Freed Yeild Snap");
+    return SIM_SUCCESS;
 }
 
 static inline sim_err_t AllocateCells(SimState_t* pSimStateBuf) {
@@ -166,10 +168,19 @@ static sim_err_t RunOnePassOver(SimState_t* pSimState) {
     ASSERT_COMMON_POSIX(PressureSolver(pSimState),"Something in pSolve shat itself");
     // run adection
     SimSnap_t* single_snap = CreateSimSnap(pSimState);
-    Transform_SendNewSimSnap(single_snap);
+    //Transform_SendNewSimSnap(single_snap);
+    Sim_SimSnap_Yeild(single_snap);
     return SIM_SUCCESS;
 }
 
+static sim_err_t FreeSimState(SimState_t* pSimState)
+{
+    ASSERT_COMMON(pSimState,"NULL Simstate when freeing");
+    FreeCells(pSimState->cells1,pSimState->nx);
+    FreeCells(pSimState->cells2, pSimState->ny);
+    free(pSimState);
+
+}
 static void* Task_Controller(void* pvArgs) {
     LOG("Task_Controller Started Up");
     sim_params_t simParams;
@@ -180,7 +191,10 @@ static void* Task_Controller(void* pvArgs) {
 
     ASSERT_COMMON_POSIX(InitSimState(&simParams, &pSimState), "Failed to init simState Structure");
     while (1) {
-        CHECK_FLAG_STATUS(killFlag);
+         if (AtomicFlag_GetStatus(&killFlag) == KILL_FLAG_SET) {       
+            FreeSimState(pSimState);                             \
+            return TASK_CONTROLLER_RET;                                                            \
+        }       
         //LOG("Ran TimeStep: %lu", cycleCount);
         ASSERT_COMMON_POSIX(RunOnePassOver(pSimState), "Fialed on passover %lu", cycleCount);
         cycleCount++;
@@ -208,6 +222,7 @@ sim_err_t ControllerInit(sim_params_t* pParams) {
 sim_err_t ControllerStop(void) {
     AtomicFlag_UpdateStatus(&killFlag, KILL_FLAG_SET);
     ControllerJoin();
+
     return SIM_SUCCESS;
 }
 
