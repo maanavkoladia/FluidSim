@@ -1,5 +1,7 @@
 #pragma once
 
+typedef struct GLFWwindow GLFWwindow;
+
 typedef enum {
     RENDER_SUCCESS = 0,
     RENDER_FAIL = 1,
@@ -22,10 +24,17 @@ typedef struct {
 } Render_Frame_t;
 
 render_err_t Render_Init(void);
-
 render_err_t Render_Dtr(void);
-
 render_err_t Render_Send_Frame(Render_Frame_t* pFrameIn);
+
+void draw_grid(void);
+void draw_velocities(void); 
+void draw_pressure(void);
+
+int Render_ShouldClose(void);
+void Render_SwapBuffers(void);
+void Render_PollEvents(void);
+GLFWwindow* Render_GetWindow(void);
 
 // render_err_t Render_Frame_Init(Render_Frame_t** pFrameOut, ...);
 //

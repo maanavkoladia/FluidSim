@@ -1,68 +1,89 @@
 #define GL_SILENCE_DEPRECATION
 #include "../../../mpsLibC/common/Assert_Common.h"
 #include "../../../mpsLibC/common/LOG.h"
-#include <GLFW/glfw3.h>
 #include <stdlib.h>
 #include <stdio.h>
-
-#define HEIGHT (480)
-#define WIDTH  (640)
-
-#define GRID_NX 10
-#define GRID_NY 10
-
-static GLFWwindow* gWindow = NULL;
-static int gWinW = WIDTH, gWinH = HEIGHT;
-
-// ----------------- callbacks -----------------
-
-static void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
-    gWinW = (width  > 0) ? width  : 1;
-    gWinH = (height > 0) ? height : 1;
-    glViewport(0, 0, gWinW, gWinH);
-}
-
-static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    if (action != GLFW_PRESS) return;
-
-    if (key == GLFW_KEY_ESCAPE) {
-        glfwSetWindowShouldClose(window, 1);
-    }
-}
-
-// ----------------- main -----------------
-
-static void KillGLFWProg(void* pvArgs) {
-    char* msg = (char*)pvArgs;
-    LOG("MSG: %s", msg);
-    glfwTerminate();
-}
+#include <math.h>
+#include <OpenGL/gl.h>
+#include "../inc/Renderer.h"
 
 int main(void) {
     LOG("Program Starting Up");
-    ASSERT_COMMON(glfwInit() != 0, "Failed to init glfw");
-
-    gWindow = glfwCreateWindow(WIDTH, HEIGHT, "Fluid Sim", NULL, NULL);
-    ASSERT_COMMON_CB(gWindow, KillGLFWProg, "Called From Main", "Window is NULL");
+    ASSERT_COMMON_POSIX(Render_Init(), "Failed to initialize renderer");
     
-    glfwMakeContextCurrent(gWindow);
-    glfwSwapInterval(1);
-
-    glfwSetFramebufferSizeCallback(gWindow, framebuffer_size_callback);
-    glfwSetKeyCallback(gWindow, key_callback);
-
-    framebuffer_size_callback(gWindow, WIDTH, HEIGHT);
-    glClearColor(0.1f, 0.1f, 0.1f, 1.0f); // Dark grey background
-
-    while (!glfwWindowShouldClose(gWindow)) {
+    int nx = 5, ny = 5;
+    
+    double* ux = (double*)malloc(sizeof(double) * (nx + 1) * ny);
+    double* uy = (double*)malloc(sizeof(double) * nx * (ny + 1));
+    double* pressure = (double*)malloc(sizeof(double) * nx * ny);
+    
+    Render_Frame_t frame = {
+        .pressure = pressure,
+        .nx = nx,
+        .ny = ny,
+        .ux = ux,
+        .uy = uy
+    };
+    
+    double time = 0.0;
+    
+    while (!Render_ShouldClose()) {
+        time += 0.016;
+        
+        for (int i = 0; i < nx; i++) {
+            for (int j = 0; j < ny; j++) {
+                int p_idx = j * nx + i;
+                double x = (double)i / nx;
+                double y = (double)j / ny;
+                pressure[p_idx] = 1.0 + 0.5 * sin(2.0 * M_PI * (x + y) + time);
+            }
+        }
+        
+        for (int i = 0; i <= nx; i++) {
+            for (int j = 0; j < ny; j++) {
+                int ux_idx = i * ny + j;
+                double x = (double)i / nx;
+                double y = (double)(j + 0.5) / ny;
+                double cx = 0.5, cy = 0.5;
+                double dx = x - cx;
+                double dy = y - cy;
+                double dist = sqrt(dx*dx + dy*dy);
+                double angle = atan2(dy, dx) + time;
+                ux[ux_idx] = 0.3 * cos(angle) * (1.0 - dist);
+            }
+        }
+        
+        for (int i = 0; i < nx; i++) {
+            for (int j = 0; j <= ny; j++) {
+                int uy_idx = i * (ny + 1) + j;
+                double x = (double)(i + 0.5) / nx;
+                double y = (double)j / ny;
+                double cx = 0.5, cy = 0.5;
+                double dx = x - cx;
+                double dy = y - cy;
+                double dist = sqrt(dx*dx + dy*dy);
+                double angle = atan2(dy, dx) + time;
+                uy[uy_idx] = 0.3 * sin(angle) * (1.0 - dist);
+            }
+        }
+        
+        Render_Send_Frame(&frame);
+        
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glfwSwapBuffers(gWindow);
-        glfwPollEvents();
+        draw_pressure();
+        draw_grid();
+        draw_velocities();
+
+        Render_SwapBuffers();
+        Render_PollEvents();
     }
 
-    glfwDestroyWindow(gWindow);
-    glfwTerminate();
+    free(ux);
+    free(uy);
+    free(pressure);
+    Render_Dtr();
+    
     LOG("Program Exiting");
     return EXIT_SUCCESS;
 }
