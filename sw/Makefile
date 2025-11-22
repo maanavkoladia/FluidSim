@@ -44,6 +44,10 @@ endif
 ifeq ($(OS_TYPE),Linux)
 endif
 
+#ifeq($(OS_NAME),Darwin)
+#	LD_FLAGS += \
+#	-framework OpenGL
+#endif
 
 OBJS = $(patsubst src/%.c,$(BUILD_DIR)/%.o,$(SRC_FILES))
 
