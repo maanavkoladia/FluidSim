@@ -22,13 +22,14 @@ LD_FLAGS = \
 		  -lglfw \
 
 SRC_FILES = \
-		   src/main.c	\
-		   src/Sim/src/Controller.c	\
-		   src/Sim/src/Sim.c	\
-		   src/Sim/src/SimDebugUtils.c	\
+			src/main.c	\
+			src/Sim/src/Sim.c \
+			src/Sim/src/Controller.c \
+			src/Sim/src/Advection.c	\
+			src/Sim/src/PressureSolver.c \
+			src/Sim/src/SimDebugUtils.c \
+			src/Transform/src/Transform.c \
 		   
-include src/Transform/inc/src_files.mk
-
 INCLUDES = \
 		   -I$(LIB_DIR)/common	\
 		   -I$(LIB_DIR)/RingBuffer/PFifo	\
@@ -63,8 +64,8 @@ all: $(TARGET)
 $(LIB):
 	$(MAKE) -C $(LIB_DIR) all
 
-$(TARGET) : $(OBJS) | $(BUILD_DIR)
-	$(CC) $(OBJS) -o $@  $(LD_FLAGS) 
+$(TARGET) : $(OBJS) $(LIB) | $(BUILD_DIR)
+	$(CC) -o $@ $(OBJS) $(LIB) $(LD_FLAGS) 
 
 $(BUILD_DIR)/%.o: src/%.c
 	mkdir -p $(dir $@)

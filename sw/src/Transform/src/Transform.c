@@ -15,14 +15,14 @@
 #define TIME_TO_DIE (FLAG_SET)
 #define KEEP_BREATHING_BUDDY (FLAG_CLEAR)
 
-AtomicFlag_t killFlag;
+static AtomicFlag_t killFlag;
 
 #define SIM_SNAP_FIFO_CAPACITY ((1 << 10) - 1)
-LF_Fifo_t* pSimSnapFifo = NULL;
+static LF_Fifo_t* pSimSnapFifo = NULL;
 
-pthread_t TransformService_th;
+static pthread_t TransformService_th;
 
-struct timespec timeOut = {.tv_nsec = 0, .tv_sec = 1};
+static struct timespec timeOut = {.tv_nsec = 0, .tv_sec = 1};
 
 /* ================================================== */
 /*                 MACRO FUNC DEFINITIONS             */
