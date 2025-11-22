@@ -95,9 +95,9 @@ static transform_err_t ConvertSnapToRenderFrame(SimSnap_t* pSnap, Render_Frame_t
 
     FOR_LOOP_COMMON(i, pSnap->nx) {
         FOR_LOOP_COMMON(j, pSnap->ny) {
-            pRenderFrame->ux[pSnap->nx * i + pSnap->ny] = pSnap->cells[i][j].ux;
-            pRenderFrame->uy[pSnap->nx * i + pSnap->ny] = pSnap->cells[i][j].uy;
-            pRenderFrame->pressure[pSnap->nx * i + pSnap->ny] = pSnap->cells[i][j].p;
+            pRenderFrame->ux[pSnap->nx * i + j] = pSnap->cells[i][j].ux;
+            pRenderFrame->uy[pSnap->nx * i + j] = pSnap->cells[i][j].uy;
+            pRenderFrame->pressure[pSnap->nx * i + j] = pSnap->cells[i][j].p;
         }
     }
     return TRANSFORM_SUCCESS;
@@ -114,6 +114,7 @@ static void* Task_TransformService(void* pvArgs) {
         SimSnap_t* pSimSnap = NULL;
         Render_Frame_t* pRenderFrame = NULL;
         err_LF_Fifo_t r = LF_Fifo_TimedPop(pSimSnapFifo, &pSimSnap, &timeOut);
+        
 
         if (r == LF_FIFO_FAIL_TIMED_POP) {
             continue;
@@ -127,6 +128,7 @@ static void* Task_TransformService(void* pvArgs) {
         ASSERT_COMMON_POSIX(ConvertSnapToRenderFrame(pSimSnap, pRenderFrame), "Faield to convert");
         // ASSERT_COMMON_POSIX(Render_Send_Frame(pRenderFrame), "Fialed to send to rednered
         // serive");
+        ASSERT_COMMON_POSIX(Sim_SimSnap_Yeild(pSimSnap), "Aint no way");
     }
 
     return NULL;

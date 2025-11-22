@@ -5,7 +5,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
-
+#include "Assert_Common.h"
+#include "LOG.h"
 
 
 
@@ -38,6 +39,16 @@ static inline bool IsSolid(Cell_t** cells,uint x, uint y) {
     return cells[x][y].type == SOLID;
 }
 
+void printCells(Cell_t** cells, uint nx, uint ny){
+    for (int i = 0; i < nx; i++) {
+        for (int j = 0; j < ny; j++) {
+            printf("Xv: %d \t", cells[i][j].ux);
+            printf("Yv: %d \t", cells[i][j].uy);
+            printf("Pressure: %d \t", cells[i][j].p);
+        }
+        printf("\n");
+    }
+}
 
 
 void PressureSolverCell(uint x, uint y, SimState_t* g_sim_state,Cell_t** current_cells , Cell_t** cell_buffer) {
@@ -64,6 +75,7 @@ void PressureSolverCell(uint x, uint y, SimState_t* g_sim_state,Cell_t** current
 sim_err_t PressureSolveIteration(SimState_t* sim_state,Cell_t** cells, Cell_t** buffer){
     for (uint i = 1; i < sim_state->nx - 1; i++) {
             for (uint j = 1; j < sim_state->ny - 1; j++) {
+                //printf("Vx: %d Vy: %d", i, j);
                 PressureSolverCell(i, j,sim_state,cells,buffer);
             }
         }
@@ -92,15 +104,25 @@ sim_err_t PressureSolver(SimState_t* sim_state) {
     double k = (sim_state->p_density * sim_state->w) / sim_state->dt;
     uint size_x = sim_state->nx;
     uint size_y = sim_state->ny;
-
+    //LOG("Starting iteration loop");
     for(int i = 0; i < NUMBER_OF_PSLOVE_ITERATIONS; i++){
+
         PressureSolveIteration(sim_state,current_cells, next_cells);
         // Ping-pong: swap current and next
         Cell_t **tmp   = current_cells;
         current_cells  = next_cells;
         next_cells     = tmp;
     }
+        //LOG("Ended iteration loop");
 
+
+    ASSERT_COMMON(next_cells,"NULL cells buffer");
+    ASSERT_COMMON(current_cells,"NULL cells buffer");
+
+    // LOG("Cells: \n");
+    // printCells(next_cells,size_x,size_y);
+    // LOG("Cells: \n");
+    // printCells(current_cells,size_x,size_y);
     UpdateVelocities(next_cells,size_x, size_y, k);
     // Update the flag so everyone else knows which buffer is active
     if (current_cells == sim_state->cells1) {
@@ -114,12 +136,15 @@ sim_err_t PressureSolver(SimState_t* sim_state) {
 
 sim_err_t UpdateVelocities(Cell_t** cell_buffer, uint nx,uint ny, uint k){
     if(!cell_buffer) return SIM_ERR;
-    for(uint x = 0; x < nx; x++){
-        for(uint y = 0; y < ny; y++){
+    for(uint x = 1; x < nx - 1; x++){
+        for(uint y = 1; y < ny - 1; y++){
+            //LOG("Updating horizonal V");
             //Update Horizontal Velocity
+            //printf("X: %d, Y: %d", x, y);
             double pressureRight = GetPressure(cell_buffer,x + 1, y);
             double pressureLeft = GetPressure(cell_buffer,x - 1, y);
             cell_buffer[x][y].ux -= k * (pressureRight - pressureLeft);
+            //LOG("Updating vertical V");
             //Update Vertical Velocity
             double pressureTop = GetPressure(cell_buffer,x, y - 1);
             double pressureBottom = GetPressure(cell_buffer,x, y + 1);

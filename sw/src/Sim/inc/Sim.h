@@ -80,6 +80,8 @@ sim_err_t Sim_Stop(void);
 
 sim_err_t Sim_Join(void);
 
+sim_err_t Sim_SimSnap_Yeild(SimSnap_t* pSnap);
+
 /* ================================================== */
 /*                 MACRO FUNC  DEFINITIONS            */
 /* ================================================== */
