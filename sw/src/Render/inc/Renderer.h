@@ -24,6 +24,9 @@ typedef struct {
 render_err_t Render_Init(void);
 render_err_t Render_Dtr(void);
 render_err_t Render_Send_Frame(Render_Frame_t* pFrameIn);
+int Render_ShouldClose(void);
+void Render_SwapBuffers(void);
+void Render_PollEvents(void);
 
 // render_err_t Render_Frame_Init(Render_Frame_t** pFrameOut, ...);
 //

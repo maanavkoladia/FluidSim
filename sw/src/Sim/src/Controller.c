@@ -52,10 +52,10 @@ Cell_t** GetCells(SimState_t* state) {
     }
 }
 
-Cell_t** CreateCellsBuffer(uint nx, uint ny) {
+Cell_t** CreateCellsBuffer(uint64_t nx, uint64_t ny) {
     Cell_t** return_val = NULL;
     return_val = (Cell_t**)malloc(sizeof(Cell_t*) * nx);
-    for (uint i = 0; i < nx; i++) {
+    for (uint64_t i = 0; i < nx; i++) {
         return_val[i] = malloc(sizeof(Cell_t) * ny);
     }
     return return_val;
@@ -67,7 +67,7 @@ static inline sim_err_t AllocateCells(SimState_t* pSimStateBuf) {
     return SIM_SUCCESS;
 }
 
-sim_err_t InsertBounds(Cell_t** init_cells, uint nx, uint ny) {
+sim_err_t InsertBounds(Cell_t** init_cells, uint64_t nx, uint64_t ny) {
     FOR_LOOP_COMMON(i, nx) {
         FOR_LOOP_COMMON(j, ny) {
             init_cells[i][j].type = FLUID;
@@ -131,14 +131,14 @@ static inline sim_err_t InitSimState(sim_params_t* pParams, SimState_t** ppSimSt
     *ppSimStateOut = pSimStateBuf;
     return SIM_SUCCESS;
 }
-void FreeCells(Cell_t** cells, uint nx) {
-    for (uint i = 0; i < nx; i++)
+void FreeCells(Cell_t** cells, uint64_t nx) {
+    for (uint64_t i = 0; i < nx; i++)
         free(cells[i]);
     free(cells);
 }
 
-void CopyCells(Cell_t** dst, Cell_t** src, uint nx, uint ny) {
-    for (uint x = 0; x < nx; x++) {
+void CopyCells(Cell_t** dst, Cell_t** src, uint64_t nx, uint64_t ny) {
+    for (uint64_t x = 0; x < nx; x++) {
         memcpy(dst[x], src[x], sizeof(Cell_t) * ny);
     }
 }

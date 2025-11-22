@@ -8,6 +8,8 @@ LIB_DIR = mpsLibC
 LIB = $(LIB_DIR)/build/$(LIB_DIR).a 
 
 
+
+
 OS_TYPE := $(shell uname -s)
 
 C_FLAGS = \
@@ -20,7 +22,6 @@ LD_FLAGS = \
 		  -lm	\
 		  -lpthread	\
 		  -lglfw \
-		  -lGL
 
 SRC_FILES = \
 			src/main.c	\
@@ -38,6 +39,7 @@ INCLUDES = \
 		   -I$(LIB_DIR)/RingBuffer/LFfifo	\
 
 
+
 ifeq ($(OS_TYPE),Darwin)
     LD_FLAGS += \
 				-framework OpenGL	\
@@ -49,6 +51,8 @@ ifeq ($(OS_TYPE),Darwin)
 endif
 
 ifeq ($(OS_TYPE),Linux)
+    LD_FLAGS += \
+				-lGL
 endif
 
 #ifeq($(OS_NAME),Darwin)

@@ -4,20 +4,32 @@
       "/usr/bin/gcc",
       "-Wextra",
       "-Wall",
-      "-O0",
-      "-g3",
-      "-I/opt/homebrew/include",
-      "-ImpsLibC/common",
-      "-ImpsLibC/RingBuffer/PFifo",
-      "-ImpsLibC/RingBuffer/LFfifo",
+      "-O3",
+      "-I.",
       "-c",
       "-o",
-      "build/main.o",
-      "src/main.c"
+      "build/RingBuffer/PFifo/PFifo.o",
+      "RingBuffer/PFifo/PFifo.c"
     ],
-    "directory": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw",
-    "file": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/src/main.c",
-    "output": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/build/main.o"
+    "directory": "/Users/andreswearden/FluidSim/sw/mpsLibC",
+    "file": "/Users/andreswearden/FluidSim/sw/mpsLibC/RingBuffer/PFifo/PFifo.c",
+    "output": "/Users/andreswearden/FluidSim/sw/mpsLibC/build/RingBuffer/PFifo/PFifo.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wextra",
+      "-Wall",
+      "-O3",
+      "-I.",
+      "-c",
+      "-o",
+      "build/ThreadPool/ThreadPool.o",
+      "ThreadPool/ThreadPool.c"
+    ],
+    "directory": "/Users/andreswearden/FluidSim/sw/mpsLibC",
+    "file": "/Users/andreswearden/FluidSim/sw/mpsLibC/ThreadPool/ThreadPool.c",
+    "output": "/Users/andreswearden/FluidSim/sw/mpsLibC/build/ThreadPool/ThreadPool.o"
   },
   {
     "arguments": [
@@ -32,12 +44,12 @@
       "-ImpsLibC/RingBuffer/LFfifo",
       "-c",
       "-o",
-      "build/Sim/src/Sim.o",
-      "src/Sim/src/Sim.c"
+      "build/Sim/src/Advection.o",
+      "src/Sim/src/Advection.c"
     ],
-    "directory": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw",
-    "file": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/src/Sim/src/Sim.c",
-    "output": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/build/Sim/src/Sim.o"
+    "directory": "/Users/andreswearden/FluidSim/sw",
+    "file": "/Users/andreswearden/FluidSim/sw/src/Sim/src/Advection.c",
+    "output": "/Users/andreswearden/FluidSim/sw/build/Sim/src/Advection.o"
   },
   {
     "arguments": [
@@ -55,9 +67,69 @@
       "build/Sim/src/Controller.o",
       "src/Sim/src/Controller.c"
     ],
-    "directory": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw",
-    "file": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/src/Sim/src/Controller.c",
-    "output": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/build/Sim/src/Controller.o"
+    "directory": "/Users/andreswearden/FluidSim/sw",
+    "file": "/Users/andreswearden/FluidSim/sw/src/Sim/src/Controller.c",
+    "output": "/Users/andreswearden/FluidSim/sw/build/Sim/src/Controller.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wextra",
+      "-Wall",
+      "-O0",
+      "-g3",
+      "-I/opt/homebrew/include",
+      "-ImpsLibC/common",
+      "-ImpsLibC/RingBuffer/PFifo",
+      "-ImpsLibC/RingBuffer/LFfifo",
+      "-c",
+      "-o",
+      "build/Sim/src/Sim.o",
+      "src/Sim/src/Sim.c"
+    ],
+    "directory": "/Users/andreswearden/FluidSim/sw",
+    "file": "/Users/andreswearden/FluidSim/sw/src/Sim/src/Sim.c",
+    "output": "/Users/andreswearden/FluidSim/sw/build/Sim/src/Sim.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wextra",
+      "-Wall",
+      "-O0",
+      "-g3",
+      "-I/opt/homebrew/include",
+      "-ImpsLibC/common",
+      "-ImpsLibC/RingBuffer/PFifo",
+      "-ImpsLibC/RingBuffer/LFfifo",
+      "-c",
+      "-o",
+      "build/main.o",
+      "src/main.c"
+    ],
+    "directory": "/Users/andreswearden/FluidSim/sw",
+    "file": "/Users/andreswearden/FluidSim/sw/src/main.c",
+    "output": "/Users/andreswearden/FluidSim/sw/build/main.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wextra",
+      "-Wall",
+      "-O0",
+      "-g3",
+      "-I/opt/homebrew/include",
+      "-ImpsLibC/common",
+      "-ImpsLibC/RingBuffer/PFifo",
+      "-ImpsLibC/RingBuffer/LFfifo",
+      "-c",
+      "-o",
+      "build/Render/src/Renderer.o",
+      "src/Render/src/Renderer.c"
+    ],
+    "directory": "/Users/andreswearden/FluidSim/sw",
+    "file": "/Users/andreswearden/FluidSim/sw/src/Render/src/Renderer.c",
+    "output": "/Users/andreswearden/FluidSim/sw/build/Render/src/Renderer.o"
   },
   {
     "arguments": [
@@ -75,8 +147,48 @@
       "build/Sim/src/SimDebugUtils.o",
       "src/Sim/src/SimDebugUtils.c"
     ],
-    "directory": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw",
-    "file": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/src/Sim/src/SimDebugUtils.c",
-    "output": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/build/Sim/src/SimDebugUtils.o"
+    "directory": "/Users/andreswearden/FluidSim/sw",
+    "file": "/Users/andreswearden/FluidSim/sw/src/Sim/src/SimDebugUtils.c",
+    "output": "/Users/andreswearden/FluidSim/sw/build/Sim/src/SimDebugUtils.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wextra",
+      "-Wall",
+      "-O0",
+      "-g3",
+      "-I/opt/homebrew/include",
+      "-ImpsLibC/common",
+      "-ImpsLibC/RingBuffer/PFifo",
+      "-ImpsLibC/RingBuffer/LFfifo",
+      "-c",
+      "-o",
+      "build/Transform/src/Transform.o",
+      "src/Transform/src/Transform.c"
+    ],
+    "directory": "/Users/andreswearden/FluidSim/sw",
+    "file": "/Users/andreswearden/FluidSim/sw/src/Transform/src/Transform.c",
+    "output": "/Users/andreswearden/FluidSim/sw/build/Transform/src/Transform.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wextra",
+      "-Wall",
+      "-O0",
+      "-g3",
+      "-I/opt/homebrew/include",
+      "-ImpsLibC/common",
+      "-ImpsLibC/RingBuffer/PFifo",
+      "-ImpsLibC/RingBuffer/LFfifo",
+      "-c",
+      "-o",
+      "build/Sim/src/PressureSolver.o",
+      "src/Sim/src/PressureSolver.c"
+    ],
+    "directory": "/Users/andreswearden/FluidSim/sw",
+    "file": "/Users/andreswearden/FluidSim/sw/src/Sim/src/PressureSolver.c",
+    "output": "/Users/andreswearden/FluidSim/sw/build/Sim/src/PressureSolver.o"
   }
 ]

@@ -7,14 +7,15 @@
 
 sim_err_t PressureSolver(SimState_t* sim_state);
 
-void PressureSolverCell(uint x, uint y, SimState_t* g_sim_state,Cell_t** current_cells , Cell_t** cell_buffer);
 
-sim_err_t UpdateVelocities(Cell_t** cell_buffer, uint nx,uint ny, uint k);
+void PressureSolverCell(uint64_t x, uint64_t y, SimState_t* g_sim_state,Cell_t** current_cells , Cell_t** cell_buffer);
 
-SimSnap_t* CreateCellsBuffer(uint nx, uint ny);
+sim_err_t UpdateVelocities(Cell_t** cell_buffer, uint64_t nx,uint64_t ny, uint64_t k);
+
+SimSnap_t* CreateCellsBuffer(uint64_t nx, uint64_t ny);
 
 
-static inline double GetPressure(Cell_t** cells,uint x, uint y);
-static inline double GetVelocityX(Cell_t** cells,uint x, uint y);
-static inline double GetVelocityY(Cell_t** cells,uint x, uint y); 
-static inline bool IsSolid(Cell_t** cells,uint x, uint y);
+static inline double GetPressure(Cell_t** cells,uint64_t x, uint64_t y);
+static inline double GetVelocityX(Cell_t** cells,uint64_t x, uint64_t y);
+static inline double GetVelocityY(Cell_t** cells,uint64_t x, uint64_t y); 
+static inline bool IsSolid(Cell_t** cells,uint64_t x, uint64_t y);

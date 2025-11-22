@@ -2,7 +2,7 @@
 #include "../inc/Renderer.h"
 #include "../../../mpsLibC/common/Assert_Common.h"
 #include "Assert_Common.h"
-#include "Helpers.h"
+#include "../inc/Helpers.h"
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 

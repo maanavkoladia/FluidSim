@@ -25,6 +25,12 @@ int main(int argc, char** argv) {
         sleep(1);
     }
 
+    while (!Render_ShouldClose()) {
+        
+        Render_SwapBuffers();
+        Render_PollEvents();
+    }
+
     ASSERT_COMMON_POSIX(Sim_Stop(), "Failed to Stop Sim");
     ASSERT_COMMON_POSIX(Transform_Dtr(), "Failed to kill tranform service");
     ASSERT_COMMON_POSIX(Render_Dtr(), "Failed to kill renderer");
