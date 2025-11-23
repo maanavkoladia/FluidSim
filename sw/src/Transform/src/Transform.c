@@ -5,8 +5,10 @@
 #include "Assert_Common.h"
 #include "AtomicFlag.h"
 #include "ForLoop.h"
+#include "HelperUtils.h"
 #include "LFfifo.h"
 #include <pthread.h>
+#include <semaphore.h>
 #include <stdint.h>
 
 /* ================================================== */
@@ -133,6 +135,9 @@ static void SimSnap_FifoFlush(void) {
 static transform_err_t Task_TransformService_TearDown(void) {
     // flush the fifo
     SimSnap_FifoFlush();
+    // all Sim Engine related task done now, signal it
+    Transform_SimEngine_Signal_TeardownComplete();
+
     return TRANSFORM_SUCCESS;
 }
 
@@ -156,14 +161,13 @@ static void* Task_TransformService(void* pvArgs) {
         // TODO: convert to Render_Frame_t
         // ConvertSnapToOpenGL(pSimSnap, ...);
         // TODO: send to renderer
-        LOG("Rxd a sim_snap");
-        // ASSERT_COMMON_POSIX(GetRenderBuf(&pRenderFrame, pSimSnap->nx * pSimSnap->ny),
-        //                      "Failed to get render buf");
-        //  ASSERT_COMMON_POSIX(ConvertSnapToRenderFrame(pSimSnap, pRenderFrame), "Faield to
-        //  convert");
-        //  ASSERT_COMMON_POSIX(Render_Send_Frame(pRenderFrame), "Fialed to send to rednered
-        //  serive");
-        //  ASSERT_COMMON_POSIX(YeildRenderBuf(pRenderFrame), "Fialed to free render frame");
+        // LOG("Rxd a sim_snap");
+        ASSERT_COMMON_POSIX(GetRenderBuf(&pRenderFrame, pSimSnap->nx * pSimSnap->ny),
+                            "Failed to get render buf");
+        ASSERT_COMMON_POSIX(ConvertSnapToRenderFrame(pSimSnap, pRenderFrame), "Faield to convert");
+        // ASSERT_COMMON_POSIX(Render_Send_Frame(pRenderFrame), "Fialed to send to rednered
+        // serive");
+        ASSERT_COMMON_POSIX(YeildRenderBuf(pRenderFrame), "Fialed to free render frame");
         ASSERT_COMMON_POSIX(Sim_SimSnap_Yeild(pSimSnap), "Aint no way");
     }
 

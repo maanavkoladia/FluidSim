@@ -31,6 +31,7 @@ SRC_FILES = \
 			src/Sim/src/PressureSolver.c \
 			src/Sim/src/SimDebugUtils.c \
 			src/Transform/src/Transform.c \
+			src/Transform/src/HelperUtils.c \
 			src/Render/src/Renderer.c	\
 		   
 INCLUDES = \
