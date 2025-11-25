@@ -4,19 +4,19 @@
 #include "Assert_Common.h"
 #include "AtomicFlag.h"
 #include "ForLoop.h"
+#include "LOG.h"
+#include "PressureSolver.h"
 #include "SimTypes.h"
 #include <pthread.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "LOG.h"
 
 #define TASK_CONTROLLER_RET (NULL)
-#define MASTER_MSG_LEN (64)
+
 typedef struct {
     sim_params_t* runParams;
-    char messageFromMaster[MASTER_MSG_LEN];
 } ControllerArgs_t;
 
 pthread_t controller_th;
@@ -33,17 +33,27 @@ AtomicFlag_t killFlag;
     } while (0)
 
 // will free mem
-static inline void CopyInArgs(void* pvArgsIn, char* msg, sim_params_t* pParamsOut) {
+static inline void CopyInArgs(void* pvArgsIn, sim_params_t* pParamsOut) {
     ASSERT_COMMON(pvArgsIn, "Got NULL paamrs in");
     ASSERT_COMMON(pParamsOut, "Got NULL Params Out");
-    ASSERT_COMMON(msg, "Got NULL message buf");
     ControllerArgs_t* pArgs = (ControllerArgs_t*)pvArgsIn;
     memcpy(pParamsOut, pArgs->runParams, sizeof(sim_params_t));
-    strncpy(msg, pArgs->messageFromMaster, MASTER_MSG_LEN);
     free(pvArgsIn);
 }
 
-Cell_t** GetCells(SimState_t* state) {
+static void FreeCells(Cell_t** cells, uint nx) {
+    for (uint i = 0; i < nx; i++)
+        free(cells[i]);
+    free(cells);
+}
+
+static void CopyCells(Cell_t** dst, Cell_t** src, uint nx, uint ny) {
+    for (uint x = 0; x < nx; x++) {
+        memcpy(dst[x], src[x], sizeof(Cell_t) * ny);
+    }
+}
+
+static Cell_t** GetCells(SimState_t* state) {
     if (!state) return NULL;
 
     if (state->using_cells1) {
@@ -62,11 +72,11 @@ Cell_t** CreateCellsBuffer(uint nx, uint ny) {
     return return_val;
 }
 
-sim_err_t Sim_SimSnap_Yeild(SimSnap_t* pSnap){
-    ASSERT_COMMON(pSnap,"NULL snap yeild");
-    FreeCells(pSnap->cells,pSnap->nx);
+sim_err_t Sim_SimSnap_Yeild(SimSnap_t* pSnap) {
+    ASSERT_COMMON(pSnap, "NULL snap yeild");
+    FreeCells(pSnap->cells, pSnap->nx);
     free(pSnap);
-    LOG("Freed Yeild Snap");
+    // LOG("Freed Yeild Snap");
     return SIM_SUCCESS;
 }
 
@@ -140,17 +150,6 @@ static inline sim_err_t InitSimState(sim_params_t* pParams, SimState_t** ppSimSt
     *ppSimStateOut = pSimStateBuf;
     return SIM_SUCCESS;
 }
-void FreeCells(Cell_t** cells, uint nx) {
-    for (uint i = 0; i < nx; i++)
-        free(cells[i]);
-    free(cells);
-}
-
-void CopyCells(Cell_t** dst, Cell_t** src, uint nx, uint ny) {
-    for (uint x = 0; x < nx; x++) {
-        memcpy(dst[x], src[x], sizeof(Cell_t) * ny);
-    }
-}
 
 SimSnap_t* CreateSimSnap(SimState_t* state) {
     SimSnap_t* res = malloc(sizeof(SimSnap_t));
@@ -164,12 +163,13 @@ SimSnap_t* CreateSimSnap(SimState_t* state) {
 static sim_err_t RunOnePassOver(SimState_t* pSimState) {
     ASSERT_COMMON(pSimState, "Got a NULL Sim State");
     // run psolver
-    //LOG("Starting PressureSolver Passover");
-    ASSERT_COMMON_POSIX(PressureSolver(pSimState),"Something in pSolve shat itself");
+    // LOG("Starting PressureSolver Passover");
+    ASSERT_COMMON_POSIX(PressureSolver(pSimState), "Something in pSolve shat itself");
     // run adection
     SimSnap_t* single_snap = CreateSimSnap(pSimState);
-    //Transform_SendNewSimSnap(single_snap);
-    Sim_SimSnap_Yeild(single_snap);
+    while (Transform_SendNewSimSnap(single_snap) != TRANSFORM_SUCCESS) {
+    }
+    // Sim_SimSnap_Yeild(single_snap);
     return SIM_SUCCESS;
 }
 
@@ -179,23 +179,22 @@ static sim_err_t FreeSimState(SimState_t* pSimState)
     FreeCells(pSimState->cells1,pSimState->nx);
     FreeCells(pSimState->cells2, pSimState->nx);
     free(pSimState);
-
+    return SIM_SUCCESS;
 }
 static void* Task_Controller(void* pvArgs) {
     LOG("Task_Controller Started Up");
     sim_params_t simParams;
-    char msgBuf[MASTER_MSG_LEN];
     SimState_t* pSimState = NULL;
     uint64_t cycleCount = 0;
-    CopyInArgs(pvArgs, msgBuf, &simParams);
+    CopyInArgs(pvArgs, &simParams);
 
     ASSERT_COMMON_POSIX(InitSimState(&simParams, &pSimState), "Failed to init simState Structure");
     while (1) {
-         if (AtomicFlag_GetStatus(&killFlag) == KILL_FLAG_SET) {       
-            FreeSimState(pSimState);                             \
-            return TASK_CONTROLLER_RET;                                                            \
-        }       
-        //LOG("Ran TimeStep: %lu", cycleCount);
+        if (AtomicFlag_GetStatus(&killFlag) == KILL_FLAG_SET) {
+            FreeSimState(pSimState);
+            return TASK_CONTROLLER_RET;
+        }
+        // LOG("Ran TimeStep: %lu", cycleCount);
         ASSERT_COMMON_POSIX(RunOnePassOver(pSimState), "Fialed on passover %lu", cycleCount);
         cycleCount++;
         // sleep(1);
@@ -212,7 +211,6 @@ sim_err_t ControllerInit(sim_params_t* pParams) {
     AtomicFlag_Init(&killFlag, "Controller Kill Flag", KILL_FLAG_CLEAR);
 
     ControllerArgs_t* pArgsBuf = (ControllerArgs_t*)malloc(sizeof(ControllerArgs_t));
-    memcpy(pArgsBuf, "Andres's Green Card", MASTER_MSG_LEN);
     pArgsBuf->runParams = pParams;
     ASSERT_COMMON_POSIX(pthread_create(&controller_th, NULL, Task_Controller, pArgsBuf),
                         "Failed to Launch controller thread");
@@ -222,7 +220,9 @@ sim_err_t ControllerInit(sim_params_t* pParams) {
 sim_err_t ControllerStop(void) {
     AtomicFlag_UpdateStatus(&killFlag, KILL_FLAG_SET);
     ControllerJoin();
-
+    // now there shouldnt be buffers going to the tranform thread any moreA
+    Transform_SimEngine_WaitFor_Teardown();
+    LOG("Done waiting got tranform to return all of the sim_snap_bufs");
     return SIM_SUCCESS;
 }
 
