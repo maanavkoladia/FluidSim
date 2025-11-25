@@ -51,10 +51,20 @@ void printCells(Cell_t** cells, uint nx, uint ny) {
 
 void PressureSolverCell(uint x, uint y, SimState_t* g_sim_state, Cell_t** current_cells,
                         Cell_t** cell_buffer) {
-    double pressureTop = GetPressure(current_cells, x, y - 1);
-    double pressureBot = GetPressure(current_cells, x, y + 1);
-    double pressureLeft = GetPressure(current_cells, x - 1, y);
-    double pressureRight = GetPressure(current_cells, x + 1, y);
+
+    uint top_material = IsSolid(current_cells,x,y-1);
+    uint left_material = IsSolid(current_cells,x-1,y);
+    uint right_material = IsSolid(current_cells,x+1,y);
+    uint bottom_material = IsSolid(current_cells,x,y+1);
+    uint edge_count = top_material + left_material + right_material + bottom_material;
+    if(IsSolid(current_cells,x,y) || (edge_count == 0)){
+        cell_buffer[x][y].p = 0;
+        return; 
+    }
+    double pressureTop = GetPressure(current_cells, x, y - 1) * top_material;
+    double pressureBot = GetPressure(current_cells, x, y + 1) * bottom_material;
+    double pressureLeft = GetPressure(current_cells, x - 1, y)* left_material;
+    double pressureRight = GetPressure(current_cells, x + 1, y)* right_material;
 
     double velocityTop = GetVelocityY(current_cells, x, y - 1);
     double velocityBot = GetVelocityY(current_cells, x, y + 1);
@@ -67,7 +77,7 @@ void PressureSolverCell(uint x, uint y, SimState_t* g_sim_state, Cell_t** curren
     double pressureSum = (pressureTop + pressureBot + pressureLeft + pressureRight);
     double initVelocityCalc = (velocityRight - velocityLeft + velocityTop - velocityBot);
     double deltaTime = g_sim_state->dt;
-    cell_buffer[x][y].p = (pressureSum - (density * width * (initVelocityCalc) / deltaTime)) / 4;
+    cell_buffer[x][y].p = (pressureSum - (density * width * (initVelocityCalc) / deltaTime)) / edge_count;
 }
 
 sim_err_t PressureSolveIteration(SimState_t* sim_state, Cell_t** cells, Cell_t** buffer) {
@@ -87,6 +97,11 @@ sim_err_t UpdateVelocities(Cell_t** cell_buffer, uint nx, uint ny, uint k) {
             // LOG("Updating horizonal V");
             // Update Horizontal Velocity
             // printf("X: %d, Y: %d", x, y);
+            if(IsSolid(cell_buffer,x,y)){
+                cell_buffer[x][y].ux = 0;
+                cell_buffer[x][y].uy = 0
+
+            }else{
             double pressureRight = GetPressure(cell_buffer, x + 1, y);
             double pressureLeft = GetPressure(cell_buffer, x - 1, y);
             cell_buffer[x][y].ux -= k * (pressureRight - pressureLeft);
@@ -95,6 +110,7 @@ sim_err_t UpdateVelocities(Cell_t** cell_buffer, uint nx, uint ny, uint k) {
             double pressureTop = GetPressure(cell_buffer, x, y - 1);
             double pressureBottom = GetPressure(cell_buffer, x, y + 1);
             cell_buffer[x][y].uy -= k * (pressureTop - pressureBottom);
+            }
         }
     }
     return SIM_SUCCESS;
@@ -116,7 +132,7 @@ sim_err_t PressureSolver(SimState_t* sim_state) {
         next_cells = sim_state->cells1;
     }
 
-    double k = (sim_state->p_density * sim_state->w) / sim_state->dt;
+    double k = sim_state->dt /(sim_state->p_density * sim_state->w) ;
     uint size_x = sim_state->nx;
     uint size_y = sim_state->ny;
     // LOG("Starting iteration loop");
