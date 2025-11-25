@@ -177,7 +177,7 @@ static sim_err_t FreeSimState(SimState_t* pSimState)
 {
     ASSERT_COMMON(pSimState,"NULL Simstate when freeing");
     FreeCells(pSimState->cells1,pSimState->nx);
-    FreeCells(pSimState->cells2, pSimState->ny);
+    FreeCells(pSimState->cells2, pSimState->nx);
     free(pSimState);
 
 }
