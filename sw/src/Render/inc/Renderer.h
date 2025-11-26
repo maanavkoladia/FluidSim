@@ -21,9 +21,20 @@ typedef struct {
     velocity_t* uy; // Velocity Y
 } Render_Frame_t;
 
+typedef struct {
+    float r, g, b, a;
+} Color_t;
+
+typedef struct {
+    int width;
+    int height;
+    Color_t* colors; // flattened array: colors[y * width + x]
+} Render_Frame_Colors_t;
+
 render_err_t Render_Init(void);
 render_err_t Render_Dtr(void);
 render_err_t Render_Send_Frame(Render_Frame_t* pFrameIn);
+render_err_t Render_Send_Frame_Colors(Render_Frame_Colors_t* pFrameIn);
 
 // render_err_t Render_Frame_Init(Render_Frame_t** pFrameOut, ...);
 //
