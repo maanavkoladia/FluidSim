@@ -2,3 +2,5 @@
 #include "SimTypes.h"
 
 sim_err_t Advect(SimState_t* pState);
+
+sim_err_t AdvectVelocity(SimState_t* state);

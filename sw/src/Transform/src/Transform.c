@@ -5,8 +5,11 @@
 #include "Assert_Common.h"
 #include "AtomicFlag.h"
 #include "ForLoop.h"
+#include "HelperUtils.h"
 #include "LFfifo.h"
 #include <pthread.h>
+#include <semaphore.h>
+#include <stdint.h>
 
 /* ================================================== */
 /*            GLOBAL VARIABLE DEFINITIONS             */
@@ -14,10 +17,11 @@
 
 #define TIME_TO_DIE (FLAG_SET)
 #define KEEP_BREATHING_BUDDY (FLAG_CLEAR)
+#define TEARDOWN_FIFO_FLUSH_FAIL_COUNT (5)
 
 static AtomicFlag_t killFlag;
 
-#define SIM_SNAP_FIFO_CAPACITY ((1 << 10) - 1)
+#define SIM_SNAP_FIFO_CAPACITY ((1 << 12) - 1)
 static LF_Fifo_t* pSimSnapFifo = NULL;
 
 static pthread_t TransformService_th;
@@ -30,15 +34,15 @@ static struct timespec timeOut = {.tv_nsec = 0, .tv_sec = 1};
 
 #define KILL_FLAG_CHECK(flag)                                                                      \
     do {                                                                                           \
-        if (AtomicFlag_GetStatus(&(flag)) == TIME_TO_DIE) {                                        \
-            return NULL;                                                                           \
-        }                                                                                          \
     } while (0)
 
 /* ================================================== */
 /*                 FUNCTION DEFINITIONS               */
 /* ================================================== */
 
+/* ================================================== */
+/*                      RENDER BUF API                */
+/* ================================================== */
 static transform_err_t GetRenderBuf(Render_Frame_t** pRenderOut, uint64_t cells) {
     // Validate inputs
     if (!pRenderOut || cells == 0) {
@@ -87,6 +91,19 @@ fail:
     return TRANSFORM_ERR_SYSTEM;
 }
 
+static transform_err_t YeildRenderBuf(Render_Frame_t* pRender) {
+    ASSERT_COMMON(pRender && pRender->pressure && pRender->ux && pRender->uy, "Got NULL ptr");
+    free(pRender->pressure);
+    free(pRender->ux);
+    free(pRender->uy);
+    free(pRender);
+    return TRANSFORM_SUCCESS;
+}
+
+/* ================================================== */
+/*                 Transform Thread API               */
+/* ================================================== */
+
 static transform_err_t ConvertSnapToRenderFrame(SimSnap_t* pSnap, Render_Frame_t* pRenderFrame) {
     ASSERT_COMMON(pSnap, "Got a NULL pSnap");
     ASSERT_COMMON(pRenderFrame, "Got a NULL pRenderFrame");
@@ -103,19 +120,40 @@ static transform_err_t ConvertSnapToRenderFrame(SimSnap_t* pSnap, Render_Frame_t
     return TRANSFORM_SUCCESS;
 }
 
+static void SimSnap_FifoFlush(void) {
+    SimSnap_t* pSimSnap = NULL;
+    uint64_t popFailCount = 0;
+    while (popFailCount <= TEARDOWN_FIFO_FLUSH_FAIL_COUNT) {
+        if (LF_Fifo_TryPop(pSimSnapFifo, &pSimSnap) == LF_FIFO_SUCCESS) {
+            Sim_SimSnap_Yeild(pSimSnap);
+        } else { // fialed the pop
+            popFailCount++;
+        }
+    }
+}
+
+static transform_err_t Task_TransformService_TearDown(void) {
+    // flush the fifo
+    SimSnap_FifoFlush();
+    // all Sim Engine related task done now, signal it
+    Transform_SimEngine_Signal_TeardownComplete();
+
+    return TRANSFORM_SUCCESS;
+}
+
 static void* Task_TransformService(void* pvArgs) {
     (void)pvArgs;
-
     LOG("Task_TransformService Started Up");
     while (1) {
-
-        KILL_FLAG_CHECK(killFlag);
+        if (AtomicFlag_GetStatus(&killFlag) == TIME_TO_DIE) {
+            ASSERT_COMMON_POSIX(Task_TransformService_TearDown(), "Failed Tear Down");
+            LOG("Transform TearDown Success");
+            return NULL;
+        }
 
         SimSnap_t* pSimSnap = NULL;
         Render_Frame_t* pRenderFrame = NULL;
         err_LF_Fifo_t r = LF_Fifo_TimedPop(pSimSnapFifo, &pSimSnap, &timeOut);
-        
-
         if (r == LF_FIFO_FAIL_TIMED_POP) {
             continue;
         }
@@ -123,16 +161,22 @@ static void* Task_TransformService(void* pvArgs) {
         // TODO: convert to Render_Frame_t
         // ConvertSnapToOpenGL(pSimSnap, ...);
         // TODO: send to renderer
+        // LOG("Rxd a sim_snap");
         ASSERT_COMMON_POSIX(GetRenderBuf(&pRenderFrame, pSimSnap->nx * pSimSnap->ny),
                             "Failed to get render buf");
         ASSERT_COMMON_POSIX(ConvertSnapToRenderFrame(pSimSnap, pRenderFrame), "Faield to convert");
         // ASSERT_COMMON_POSIX(Render_Send_Frame(pRenderFrame), "Fialed to send to rednered
         // serive");
+        ASSERT_COMMON_POSIX(YeildRenderBuf(pRenderFrame), "Fialed to free render frame");
         ASSERT_COMMON_POSIX(Sim_SimSnap_Yeild(pSimSnap), "Aint no way");
     }
 
     return NULL;
 }
+
+/* ================================================== */
+/*                 PUBLIC API                         */
+/* ================================================== */
 
 transform_err_t Transform_Init(void) {
 

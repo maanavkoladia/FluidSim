@@ -22,6 +22,7 @@ LD_FLAGS = \
 		  -lm	\
 		  -lpthread	\
 		  -lglfw \
+		  -lGL	\
 		  -fsanitize=address \
 
 SRC_FILES = \
@@ -32,6 +33,7 @@ SRC_FILES = \
 			src/Sim/src/PressureSolver.c \
 			src/Sim/src/SimDebugUtils.c \
 			src/Transform/src/Transform.c \
+			src/Transform/src/HelperUtils.c \
 			src/Render/src/Renderer.c	\
 		   
 INCLUDES = \
@@ -39,6 +41,8 @@ INCLUDES = \
 		   -I$(LIB_DIR)/RingBuffer/PFifo	\
 		   -I$(LIB_DIR)/RingBuffer/LFfifo	\
 
+HDR_FILES = \
+		   src/config.h
 
 
 ifeq ($(OS_TYPE),Darwin)
@@ -85,3 +89,5 @@ clean :
 	rm -rf ./$(BUILD_DIR)
 	rm -rf $(TARGET)
 	$(MAKE) -C $(LIB_DIR) clean
+
+
