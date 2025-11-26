@@ -4,12 +4,14 @@
 #include "Assert_Common.h"
 #include "AtomicFlag.h"
 #include "ForLoop.h"
+#include "PressureSolver.h"
 #include "SimTypes.h"
 #include <pthread.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include "LOG.h"
 
 #define TASK_CONTROLLER_RET (NULL)
 #define MASTER_MSG_LEN (64)
@@ -30,6 +32,8 @@ AtomicFlag_t killFlag;
             return TASK_CONTROLLER_RET;                                                            \
         }                                                                                          \
     } while (0)
+
+void FreeCells(Cell_t** cells, uint64_t nx);
 
 // will free mem
 static inline void CopyInArgs(void* pvArgsIn, char* msg, sim_params_t* pParamsOut) {
@@ -59,6 +63,12 @@ Cell_t** CreateCellsBuffer(uint64_t nx, uint64_t ny) {
         return_val[i] = malloc(sizeof(Cell_t) * ny);
     }
     return return_val;
+}
+
+sim_err_t Sim_SimSnap_Yeild(SimSnap_t* pSnap){
+    ASSERT_COMMON(pSnap,"NULL snap yeild");
+    FreeCells(pSnap->cells,pSnap->nx);
+    free(pSnap);
 }
 
 static inline sim_err_t AllocateCells(SimState_t* pSimStateBuf) {
@@ -155,6 +165,8 @@ SimSnap_t* CreateSimSnap(SimState_t* state) {
 static sim_err_t RunOnePassOver(SimState_t* pSimState) {
     ASSERT_COMMON(pSimState, "Got a NULL Sim State");
     // run psolver
+    //LOG("Starting PressureSolver Passover");
+    ASSERT_COMMON_POSIX(PressureSolver(pSimState),"Something in pSolve shat itself");
     // run adection
     SimSnap_t* single_snap = CreateSimSnap(pSimState);
     Transform_SendNewSimSnap(single_snap);
@@ -172,7 +184,7 @@ static void* Task_Controller(void* pvArgs) {
     ASSERT_COMMON_POSIX(InitSimState(&simParams, &pSimState), "Failed to init simState Structure");
     while (1) {
         CHECK_FLAG_STATUS(killFlag);
-        // LOG("Ran TimeStep: %lu", cycleCount);
+        //LOG("Ran TimeStep: %lu", cycleCount);
         ASSERT_COMMON_POSIX(RunOnePassOver(pSimState), "Fialed on passover %lu", cycleCount);
         cycleCount++;
         // sleep(1);

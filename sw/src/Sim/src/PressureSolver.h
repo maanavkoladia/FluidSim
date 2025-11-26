@@ -12,8 +12,6 @@ void PressureSolverCell(uint64_t x, uint64_t y, SimState_t* g_sim_state,Cell_t**
 
 sim_err_t UpdateVelocities(Cell_t** cell_buffer, uint64_t nx,uint64_t ny, uint64_t k);
 
-SimSnap_t* CreateCellsBuffer(uint64_t nx, uint64_t ny);
-
 
 static inline double GetPressure(Cell_t** cells,uint64_t x, uint64_t y);
 static inline double GetVelocityX(Cell_t** cells,uint64_t x, uint64_t y);

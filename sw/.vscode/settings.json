@@ -3,6 +3,7 @@
         "atomicflag.h": "c",
         "pressuresolver.h": "c",
         "stdbool.h": "c",
-        "transform.h": "c"
+        "transform.h": "c",
+        "assert_common.h": "c"
     }
 }
