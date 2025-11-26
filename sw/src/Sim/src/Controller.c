@@ -1,4 +1,5 @@
 #include "Controller.h"
+#include "Advection.h"
 #include "../../Transform/inc/Transform.h"
 #include "../inc/Sim.h"
 #include "Assert_Common.h"
@@ -165,7 +166,11 @@ static sim_err_t RunOnePassOver(SimState_t* pSimState) {
     // run psolver
     // LOG("Starting PressureSolver Passover");
     ASSERT_COMMON_POSIX(PressureSolver(pSimState), "Something in pSolve shat itself");
+    
     // run adection
+    AdvectVelocity(pSimState);
+
+    //Send SimSnap frame 
     SimSnap_t* single_snap = CreateSimSnap(pSimState);
     while (Transform_SendNewSimSnap(single_snap) != TRANSFORM_SUCCESS) {
     }

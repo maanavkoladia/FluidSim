@@ -99,7 +99,7 @@ sim_err_t UpdateVelocities(Cell_t** cell_buffer, uint nx, uint ny, uint k) {
             // printf("X: %d, Y: %d", x, y);
             if(IsSolid(cell_buffer,x,y)){
                 cell_buffer[x][y].ux = 0;
-                cell_buffer[x][y].uy = 0
+                cell_buffer[x][y].uy = 0;
 
             }else{
             double pressureRight = GetPressure(cell_buffer, x + 1, y);
