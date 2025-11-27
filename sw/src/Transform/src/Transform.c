@@ -164,10 +164,9 @@ static void* Task_TransformService(void* pvArgs) {
         // LOG("Rxd a sim_snap");
         ASSERT_COMMON_POSIX(GetRenderBuf(&pRenderFrame, pSimSnap->nx * pSimSnap->ny),
                             "Failed to get render buf");
-        ASSERT_COMMON_POSIX(ConvertSnapToRenderFrame(pSimSnap, pRenderFrame), "Faield to convert");
-        // ASSERT_COMMON_POSIX(Render_Send_Frame(pRenderFrame), "Fialed to send to rednered
-        // serive");
-        ASSERT_COMMON_POSIX(YeildRenderBuf(pRenderFrame), "Fialed to free render frame");
+        ASSERT_COMMON_POSIX(ConvertSnapToRenderFrame(pSimSnap, pRenderFrame), "Failed to convert");
+        ASSERT_COMMON_POSIX(Render_Send_Frame(pRenderFrame), "Failed to send to render service");  // UNCOMMENT THIS
+        // ASSERT_COMMON_POSIX(YeildRenderBuf(pRenderFrame), "Failed to free render frame");
         ASSERT_COMMON_POSIX(Sim_SimSnap_Yeild(pSimSnap), "Aint no way");
     }
 

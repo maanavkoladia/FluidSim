@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <math.h>
 
 #define TASK_CONTROLLER_RET (NULL)
 
@@ -44,14 +45,14 @@ static inline void CopyInArgs(void* pvArgsIn, sim_params_t* pParamsOut) {
     free(pvArgsIn);
 }
 
-static void FreeCells(Cell_t** cells, uint nx) {
-    for (uint i = 0; i < nx; i++)
+void FreeCells(Cell_t** cells, uint64_t nx) {
+    for (uint64_t i = 0; i < nx; i++)
         free(cells[i]);
     free(cells);
 }
 
-static void CopyCells(Cell_t** dst, Cell_t** src, uint nx, uint ny) {
-    for (uint x = 0; x < nx; x++) {
+static void CopyCells(Cell_t** dst, Cell_t** src, uint64_t nx, uint64_t ny) {
+    for (uint64_t x = 0; x < nx; x++) {
         memcpy(dst[x], src[x], sizeof(Cell_t) * ny);
     }
 }
@@ -153,20 +154,6 @@ static inline sim_err_t InitSimState(sim_params_t* pParams, SimState_t** ppSimSt
     *ppSimStateOut = pSimStateBuf;
     return SIM_SUCCESS;
 }
-<<<<<<< HEAD
-void FreeCells(Cell_t** cells, uint64_t nx) {
-    for (uint64_t i = 0; i < nx; i++)
-        free(cells[i]);
-    free(cells);
-}
-
-void CopyCells(Cell_t** dst, Cell_t** src, uint64_t nx, uint64_t ny) {
-    for (uint64_t x = 0; x < nx; x++) {
-        memcpy(dst[x], src[x], sizeof(Cell_t) * ny);
-    }
-}
-=======
->>>>>>> 3b447af1055a38d0cf273cf6276f442f938fef75
 
 SimSnap_t* CreateSimSnap(SimState_t* state) {
     SimSnap_t* res = malloc(sizeof(SimSnap_t));
@@ -216,7 +203,7 @@ static void* Task_Controller(void* pvArgs) {
             return TASK_CONTROLLER_RET;
         }
         // LOG("Ran TimeStep: %lu", cycleCount);
-        ASSERT_COMMON_POSIX(RunOnePassOver(pSimState), "Fialed on passover %lu", cycleCount);
+        ASSERT_COMMON_POSIX(RunOnePassOver(pSimState), "Failed on passover %llu", cycleCount);
         cycleCount++;
         // sleep(1);
     }

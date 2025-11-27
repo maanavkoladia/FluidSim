@@ -22,7 +22,6 @@ LD_FLAGS = \
 		  -lm	\
 		  -lpthread	\
 		  -lglfw \
-		  -lGL	\
 		  -fsanitize=address \
 
 SRC_FILES = \

@@ -1,7 +1,6 @@
 #define GL_SILENCE_DEPRECATION
 #include "../inc/Renderer.h"
 #include "../../../mpsLibC/common/Assert_Common.h"
-#include "Assert_Common.h"
 #include "../inc/Helpers.h"
 #include <GLFW/glfw3.h>
 #include <stdio.h>
@@ -11,6 +10,7 @@
 #endif
 
 static Render_Frame_t* gCurrentFrame = NULL;
+static Render_Frame_Colors_t* gCurrentFrameColors = NULL;
 
 #define HEIGHT 480
 #define WIDTH 640
@@ -64,8 +64,8 @@ void draw_velocities(void) {
 
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
-            int ux_idx = (i + 1) * ny + j;
-            if (ux_idx < (nx + 1) * ny) {
+            int ux_idx = nx * i + j;  // Changed to column-major
+            if (ux_idx < nx * ny) {
                 float ux_val = (float)gCurrentFrame->ux[ux_idx];
 
                 float x = -1.0f + (2.0f * i / nx);
@@ -79,8 +79,8 @@ void draw_velocities(void) {
 
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
-            int uy_idx = i * (ny + 1) + j;
-            if (uy_idx < nx * (ny + 1)) {
+            int uy_idx = nx * i + j;  // Changed to column-major
+            if (uy_idx < nx * ny) {
                 float uy_val = (float)gCurrentFrame->uy[uy_idx];
 
                 float x = -1.0f + (2.0f * (i + 0.5f) / nx);
@@ -118,7 +118,7 @@ void draw_pressure(void) {
 
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
-            int p_idx = j * nx + i;
+            int p_idx = nx * i + j;  // Changed from j * nx + i to column-major
             double p = gCurrentFrame->pressure[p_idx];
 
             double t = (p - pMin) / pRange;
@@ -135,6 +135,38 @@ void draw_pressure(void) {
             float x1 = -1.0f + (2.0f * (i + 1) / nx);
             float y0 = -1.0f + (2.0f * j / ny);
             float y1 = -1.0f + (2.0f * (j + 1) / ny);
+
+            glVertex2f(x0, y0);
+            glVertex2f(x1, y0);
+            glVertex2f(x1, y1);
+            glVertex2f(x0, y1);
+        }
+    }
+
+    glEnd();
+}
+
+void draw_frame_colors(void) {
+    if (!gCurrentFrameColors || !gCurrentFrameColors->colors) {
+        return;
+    }
+
+    int width = gCurrentFrameColors->width;
+    int height = gCurrentFrameColors->height;
+
+    glBegin(GL_QUADS);
+
+    for (int x = 0; x < width; x++) {
+        for (int y = 0; y < height; y++) {
+            int idx = y * width + x;
+            Color_t* color = &gCurrentFrameColors->colors[idx];
+            
+            glColor3f(color->r, color->g, color->b);
+
+            float x0 = -1.0f + (2.0f * x / width);
+            float x1 = -1.0f + (2.0f * (x + 1) / width);
+            float y0 = -1.0f + (2.0f * y / height);
+            float y1 = -1.0f + (2.0f * (y + 1) / height);
 
             glVertex2f(x0, y0);
             glVertex2f(x1, y0);
@@ -220,5 +252,22 @@ render_err_t Render_Dtr(void) {
     gWindow = NULL;
     glfwTerminate();
     LOG("Renderer Dtr success");
+    return RENDER_SUCCESS;
+}
+
+render_err_t Render_Send_Frame_Colors(Render_Frame_Colors_t* pFrameIn){
+    if (!pFrameIn) {
+        return RENDER_FAIL;
+    }
+    
+    if (!pFrameIn->colors) {
+        return RENDER_FAIL;
+    }
+    
+    if (pFrameIn->width <= 0 || pFrameIn->height <= 0) {
+        return RENDER_FAIL;
+    }
+    
+    gCurrentFrameColors = pFrameIn;
     return RENDER_SUCCESS;
 }

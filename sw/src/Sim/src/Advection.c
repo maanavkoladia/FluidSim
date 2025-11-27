@@ -45,20 +45,20 @@ double lerp(double a, double b, double t) {
 
 
 double InterpolateVelocityX(SimState_t* sim_state, double world_pos_x, double world_pos_y){
-    uint nx = sim_state->nx;
-    uint ny = sim_state->ny;
-    uint cell_size = sim_state->w;
+    uint64_t nx = sim_state->nx;
+    uint64_t ny = sim_state->ny;
+    uint64_t cell_size = sim_state->w;
 
-    uint width = (nx - 1) * cell_size;
-    uint height = (ny - 1) * cell_size;
+    uint64_t width = (nx - 1) * cell_size;
+    uint64_t height = (ny - 1) * cell_size;
 
     double posx = ((world_pos_x + width) / 2) * cell_size;
     double posy = ((world_pos_y + height)/ 2) * cell_size;
 
-    uint left = clamp(posx, 0, nx - 2);
-    uint bottom = clamp(posy, 0, ny - 2);
-    uint right = left + 1;
-    uint top = bottom + 1;
+    uint64_t left = clamp(posx, 0, nx - 2);
+    uint64_t bottom = clamp(posy, 0, ny - 2);
+    uint64_t right = left + 1;
+    uint64_t top = bottom + 1;
 
     double x_fraction = clamp01(posx - left);
     double y_fraction = clamp01(posy - bottom);
@@ -73,20 +73,20 @@ double InterpolateVelocityX(SimState_t* sim_state, double world_pos_x, double wo
 }
 
 double InterpolateVelocityY(SimState_t* sim_state, double world_pos_x, double world_pos_y){
-    uint nx = sim_state->nx;
-    uint ny = sim_state->ny;
-    uint cell_size = sim_state->w;
+    uint64_t nx = sim_state->nx;
+    uint64_t ny = sim_state->ny;
+    uint64_t cell_size = sim_state->w;
 
-    uint width = (nx - 1) * cell_size;
-    uint height = (ny - 1) * cell_size;
+    uint64_t width = (nx - 1) * cell_size;
+    uint64_t height = (ny - 1) * cell_size;
 
     double posx = ((world_pos_x + width) / 2) * cell_size;
     double posy = ((world_pos_y + height)/ 2) * cell_size;
 
-    uint left = clamp(posx, 0, nx - 2);
-    uint bottom = clamp(posy, 0, ny - 2);
-    uint right = left + 1;
-    uint top = bottom + 1;
+    uint64_t left = clamp(posx, 0, nx - 2);
+    uint64_t bottom = clamp(posy, 0, ny - 2);
+    uint64_t right = left + 1;
+    uint64_t top = bottom + 1;
 
     double x_fraction = clamp01(posx - left);
     double y_fraction = clamp01(posy - bottom);
@@ -108,8 +108,8 @@ sim_err_t AdvectVelocity(SimState_t* state){
     Cell_t** new_cell = state->using_cells1 ? state->cells2 : state->cells1;
 
 
-    for(uint i = 0; i < state->nx; i++){
-        for(uint j = 0; j < state->ny; j++){
+    for(uint64_t i = 0; i < state->nx; i++){
+        for(uint64_t j = 0; j < state->ny; j++){
             //get world position x velocity
             double horizontal_worldX = cell_width / 2 + i * cell_size;
             double horizontal_worldY = cell_height / 2 + j * cell_size + cell_size/2;

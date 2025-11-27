@@ -1,13 +1,15 @@
+#define GL_SILENCE_DEPRECATION
 #include "Assert_Common.h"
 #include "ForLoop.h"
 #include "LOG.h"
 #include "Render/inc/Renderer.h"
+#include "Render/inc/Helpers.h"
 #include "Sim/inc/Sim.h"
 #include "Transform/inc/Transform.h"
 #include "config.h"
 #include <unistd.h>
-
-#define WAIT_TIME_S (3)
+#include <OpenGL/gl.h>
+#include <time.h>
 
 sim_params_t simParams;
 
@@ -16,8 +18,22 @@ int main(int argc, char** argv) {
     (void)argv;
     LOG("Fluid Sim Starting Up");
 
+#ifdef RUN_SIM_ENGINE
+    simParams.nx = 50;
+    simParams.ny = 50;
+    simParams.dt = 0.01;
+    simParams.p_density = 1.0;
+    simParams.w = 0.02;
+    simParams.overrelaxation_const = 1.0;
+    simParams.PSolver_Interations = 20;
+    simParams.runTime.tv_sec = 0;
+    simParams.runTime.tv_nsec = 0;
+    simParams.advectionScheme = SEMI_LAGRANGIAN;
+    simParams.PsolverScene = GAUSS_SEIDEL;
+#endif
+
 #ifdef RUN_TRANSFORM
-    ASSERT_COMMON_POSIX(Transform_Init(), "Faield to init Xform");
+    ASSERT_COMMON_POSIX(Transform_Init(), "Failed to init Transform");
 #endif
 
 #ifdef RUN_RENDERER
@@ -29,17 +45,26 @@ int main(int argc, char** argv) {
     ASSERT_COMMON_POSIX(Sim_Start(), "Failed to Start Sim");
 #endif
 
-    FOR_LOOP_COMMON(i, WAIT_TIME_S) {
-        LOG("Slept for %d seconds", i + 1);
-        sleep(1);
+#ifdef RUN_RENDERER
+    while (!Render_ShouldClose()) {
+        glClear(GL_COLOR_BUFFER_BIT);
+        draw_pressure();      // Draw pressure colors
+        draw_velocities();    // Draw velocity arrows
+        draw_grid();          // Draw grid
+        Render_SwapBuffers();
+        Render_PollEvents();
     }
+#endif
 
 #ifdef RUN_SIM_ENGINE
     ASSERT_COMMON_POSIX(Sim_Stop(), "Failed to Stop Sim");
+    Transform_SimEngine_WaitFor_Teardown();
 #endif
+
 #ifdef RUN_TRANSFORM
-    ASSERT_COMMON_POSIX(Transform_Dtr(), "Failed to kill tranform service");
+    ASSERT_COMMON_POSIX(Transform_Dtr(), "Failed to kill transform service");
 #endif
+
 #ifdef RUN_RENDERER
     ASSERT_COMMON_POSIX(Render_Dtr(), "Failed to kill renderer");
 #endif
