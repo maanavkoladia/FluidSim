@@ -2,6 +2,7 @@
 
 #include "../../Render/inc/Renderer.h"
 #include "../../Sim/inc/Sim.h"
+#include <assert.h>
 
 typedef enum {
     TRANSFORM_SUCCESS = 0,

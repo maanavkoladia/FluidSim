@@ -9,7 +9,16 @@
 
 #define WAIT_TIME_S (3)
 
-sim_params_t simParams;
+sim_params_t simParams = {.nx = 64,
+                          .ny = 48,
+                          .dt = 0.01,                  // simulation timestep in seconds
+                          .p_density = 1.0,            // fluid density
+                          .w = 0.1,                    // some simulation weight parameter
+                          .overrelaxation_const = 1.7, // typical SOR relaxation factor
+                          .PSolver_Interations = 50,   // number of iterations for pressure solver
+                          .runTime = {0, 0},           // initialize to 0
+                          .advectionScheme = SEMI_LAGRANGIAN,
+                          .PsolverScene = JACOBI};
 
 int main(int argc, char** argv) {
     (void)argc;
