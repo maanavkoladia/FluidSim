@@ -104,7 +104,7 @@ static void* Task_TransformService(void* pvArgs) {
         ASSERT_COMMON_POSIX(Snap2ColorFrame(pSimSnap, pRenderFrame), "Faield to convert");
         ASSERT_COMMON_POSIX(Render_Send_Frame_Colors(pRenderFrame),
                             "Fialed to send to rednered serive");
-        ASSERT_COMMON_POSIX(TransForm_ColorFrameYeild(pRenderFrame), "Fialed to free render frame");
+        // ASSERT_COMMON_POSIX(TransForm_ColorFrameYeild(pRenderFrame), "Fialed to free render frame");
         ASSERT_COMMON_POSIX(Sim_SimSnap_Yeild(pSimSnap), "Aint no way");
 
 #else
@@ -155,4 +155,10 @@ transform_err_t Transform_Dtr(void) {
 transform_err_t Transform_SendNewSimSnap(SimSnap_t* pSimSnap) {
     err_LF_Fifo_t r = LF_Fifo_TryPush(pSimSnapFifo, pSimSnap);
     return (r == LF_FIFO_SUCCESS) ? TRANSFORM_SUCCESS : TRANSFORM_ERR_SEND_FRAME;
+}
+
+void Transform_YeildRender_Frame_Colors(Render_Frame_Colors_t* pFrame) {
+    if (pFrame) {
+        TransForm_ColorFrameYeild(pFrame);
+    }
 }

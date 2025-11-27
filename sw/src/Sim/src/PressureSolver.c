@@ -153,6 +153,13 @@ sim_err_t PressureSolver(SimState_t* sim_state) {
     // printCells(next_cells,size_x,size_y);
     // LOG("Cells: \n");
     // printCells(current_cells,size_x,size_y);
+
+    for (uint64_t x = 0; x < size_x; x++) {
+        for (uint64_t y = 0; y < size_y; y++) {
+            next_cells[x][y].ux = current_cells[x][y].ux;
+            next_cells[x][y].uy = current_cells[x][y].uy;
+        }
+    }
     UpdateVelocities(next_cells, size_x, size_y, k);
     // Update the flag so everyone else knows which buffer is active
     if (current_cells == sim_state->cells1) {

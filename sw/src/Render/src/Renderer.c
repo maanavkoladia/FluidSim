@@ -2,6 +2,7 @@
 #include "../inc/Renderer.h"
 #include "../../../mpsLibC/common/Assert_Common.h"
 #include "../inc/Helpers.h"
+#include "../../Transform/inc/Transform.h"
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 
@@ -179,6 +180,9 @@ void draw_frame_colors(void) {
 }
 
 render_err_t Render_Send_Frame(Render_Frame_t* pFrameIn) {
+    if (!pFrameIn) {
+        return RENDER_FAIL;
+    }
     gCurrentFrame = pFrameIn;
     return RENDER_SUCCESS;
 }
@@ -266,6 +270,10 @@ render_err_t Render_Send_Frame_Colors(Render_Frame_Colors_t* pFrameIn){
     
     if (pFrameIn->width <= 0 || pFrameIn->height <= 0) {
         return RENDER_FAIL;
+    }
+    
+    if (gCurrentFrameColors) {
+        Transform_YeildRender_Frame_Colors(gCurrentFrameColors);
     }
     
     gCurrentFrameColors = pFrameIn;

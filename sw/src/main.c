@@ -27,20 +27,6 @@ int main(int argc, char** argv) {
     (void)argv;
     LOG("Fluid Sim Starting Up");
 
-#ifdef RUN_SIM_ENGINE
-    simParams.nx = 50;
-    simParams.ny = 50;
-    simParams.dt = 0.01;
-    simParams.p_density = 1.0;
-    simParams.w = 0.02;
-    simParams.overrelaxation_const = 1.0;
-    simParams.PSolver_Interations = 20;
-    simParams.runTime.tv_sec = 0;
-    simParams.runTime.tv_nsec = 0;
-    simParams.advectionScheme = SEMI_LAGRANGIAN;
-    simParams.PsolverScene = GAUSS_SEIDEL;
-#endif
-
 #ifdef RUN_TRANSFORM
     ASSERT_COMMON_POSIX(Transform_Init(), "Failed to init Transform");
 #endif
@@ -57,8 +43,13 @@ int main(int argc, char** argv) {
 #ifdef RUN_RENDERER
     while (!Render_ShouldClose()) {
         glClear(GL_COLOR_BUFFER_BIT);
+        
+#ifdef DISPLAY_COLORS
+        draw_frame_colors();  // Draw color frame (velocity as colors)
+#else
         draw_pressure();      // Draw pressure colors
         draw_velocities();    // Draw velocity arrows
+#endif
         draw_grid();          // Draw grid
         Render_SwapBuffers();
         Render_PollEvents();

@@ -3,7 +3,7 @@ CC = gcc
 CFLAGS = -Wall -Wextra -g -I../../../mpsLibC/common -I/opt/homebrew/include -I../inc
 LDFLAGS = -L/opt/homebrew/lib -lglfw -framework OpenGL
 
-# Rendering mode: set USE_COLOR_FRAME=1 to use colors struct, otherwise uses pressure/velocity
+# Set USE_COLOR_FRAME=1 to enable color frame rendering
 USE_COLOR_FRAME ?= 0
 
 ifeq ($(USE_COLOR_FRAME),1)
