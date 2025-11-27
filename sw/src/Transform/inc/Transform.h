@@ -18,3 +18,5 @@ transform_err_t Transform_Dtr(void);
 transform_err_t Transform_SendNewSimSnap(SimSnap_t* pSimSnap);
 
 void Transform_SimEngine_WaitFor_Teardown(void);
+
+void Transform_YeildRender_Frame_Colors(Render_Frame_Colors_t* pFrame);
