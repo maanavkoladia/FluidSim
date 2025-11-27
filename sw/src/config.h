@@ -4,4 +4,4 @@
 #define RUN_TRANSFORM
 // #define RUN_RENDERER
 
-#define DISPLAY_COLORS
+// #define DISPLAY_COLORS

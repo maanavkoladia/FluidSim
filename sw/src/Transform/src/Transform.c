@@ -102,8 +102,8 @@ static void* Task_TransformService(void* pvArgs) {
             Init_ColorFrame(&pRenderFrame, RENDER_WINDOW_WIDTH, RENDER_WINDOW_HEIGHT),
             "Failed to get render buf");
         ASSERT_COMMON_POSIX(Snap2ColorFrame(pSimSnap, pRenderFrame), "Faield to convert");
-        // ASSERT_COMMON_POSIX(Render_Send_Frame(pRenderFrame), "Fialed to send to rednered
-        // serive");
+        ASSERT_COMMON_POSIX(Render_Send_Frame_Colors(pRenderFrame),
+                            "Fialed to send to rednered serive");
         ASSERT_COMMON_POSIX(TransForm_ColorFrameYeild(pRenderFrame), "Fialed to free render frame");
         ASSERT_COMMON_POSIX(Sim_SimSnap_Yeild(pSimSnap), "Aint no way");
 
@@ -112,9 +112,9 @@ static void* Task_TransformService(void* pvArgs) {
         ASSERT_COMMON_POSIX(Init_RawFrame(&pRenderFrame, pSimSnap->nx * pSimSnap->ny),
                             "Failed to get render buf");
         ASSERT_COMMON_POSIX(Snap2RawFrame(pSimSnap, pRenderFrame), "Faield to convert");
-        // ASSERT_COMMON_POSIX(Render_Send_Frame(pRenderFrame), "Fialed to send to rednered
-        // serive");
-        ASSERT_COMMON_POSIX(TransForm_RawFrameYeild(pRenderFrame), "Fialed to free render frame");
+        ASSERT_COMMON_POSIX(Render_Send_Frame(pRenderFrame), "Fialed to send to rednered serive");
+        // ASSERT_COMMON_POSIX(TransForm_RawFrameYeild(pRenderFrame), "Fialed to free render
+        // frame");
         ASSERT_COMMON_POSIX(Sim_SimSnap_Yeild(pSimSnap), "Aint no way");
 #endif
     }

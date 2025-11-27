@@ -71,11 +71,15 @@ transform_err_t Snap2RawFrame(SimSnap_t* pSnap, Render_Frame_t* pFrame) {
     pFrame->nx = pSnap->nx;
     pFrame->ny = pSnap->ny;
 
-    FOR_LOOP_COMMON(i, pSnap->nx) {
-        FOR_LOOP_COMMON(j, pSnap->ny) {
-            pFrame->ux[pSnap->nx * i + j] = pSnap->cells[i][j].ux;
-            pFrame->uy[pSnap->nx * i + j] = pSnap->cells[i][j].uy;
-            pFrame->pressure[pSnap->nx * i + j] = pSnap->cells[i][j].p;
+    uint64_t nx = pSnap->nx;
+    uint64_t ny = pSnap->ny;
+
+    FOR_LOOP_COMMON(i, nx) {
+        FOR_LOOP_COMMON(j, ny) {
+            uint64_t idx = i * ny + j; // correct row-major index
+            pFrame->ux[idx] = pSnap->cells[i][j].ux;
+            pFrame->uy[idx] = pSnap->cells[i][j].uy;
+            pFrame->pressure[idx] = pSnap->cells[i][j].p;
         }
     }
     return TRANSFORM_SUCCESS;
