@@ -1,7 +1,7 @@
 #include "Controller.h"
-#include "Advection.h"
 #include "../../Transform/inc/Transform.h"
 #include "../inc/Sim.h"
+#include "Advection.h"
 #include "Assert_Common.h"
 #include "AtomicFlag.h"
 #include "ForLoop.h"
@@ -131,8 +131,8 @@ static inline sim_err_t InitSimState(sim_params_t* pParams, SimState_t** ppSimSt
 
     // Copy shared parameters
     pSimStateBuf->dt = pParams->dt;
-    pSimStateBuf->nx = pParams->nx + 2;
-    pSimStateBuf->ny = pParams->ny + 2;
+    pSimStateBuf->nx = pParams->nx;
+    pSimStateBuf->ny = pParams->ny;
     pSimStateBuf->w = pParams->w;
     pSimStateBuf->overrelaxation_const = pParams->overrelaxation_const;
 
@@ -169,11 +169,11 @@ static sim_err_t RunOnePassOver(SimState_t* pSimState) {
     // run psolver
     // LOG("Starting PressureSolver Passover");
     ASSERT_COMMON_POSIX(PressureSolver(pSimState), "Something in pSolve shat itself");
-    
+
     // run adection
     AdvectVelocity(pSimState);
 
-    //Send SimSnap frame 
+    // Send SimSnap frame
     SimSnap_t* single_snap = CreateSimSnap(pSimState);
     while (Transform_SendNewSimSnap(single_snap) != TRANSFORM_SUCCESS) {
     }
@@ -181,10 +181,9 @@ static sim_err_t RunOnePassOver(SimState_t* pSimState) {
     return SIM_SUCCESS;
 }
 
-static sim_err_t FreeSimState(SimState_t* pSimState)
-{
-    ASSERT_COMMON(pSimState,"NULL Simstate when freeing");
-    FreeCells(pSimState->cells1,pSimState->nx);
+static sim_err_t FreeSimState(SimState_t* pSimState) {
+    ASSERT_COMMON(pSimState, "NULL Simstate when freeing");
+    FreeCells(pSimState->cells1, pSimState->nx);
     FreeCells(pSimState->cells2, pSimState->nx);
     free(pSimState);
     return SIM_SUCCESS;

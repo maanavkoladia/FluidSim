@@ -1,5 +1,9 @@
 #pragma once
 
+#include <stdint.h>
+#define RENDER_WINDOW_HEIGHT (480)
+#define RENDER_WINDOW_WIDTH (640)
+
 typedef enum {
     RENDER_SUCCESS = 0,
     RENDER_FAIL = 1,
@@ -26,8 +30,8 @@ typedef struct {
 } Color_t;
 
 typedef struct {
-    int width;
-    int height;
+    uint64_t width;
+    uint64_t height;
     Color_t* colors; // flattened array: colors[y * width + x]
 } Render_Frame_Colors_t;
 

@@ -2,14 +2,20 @@
 /*                      INCLUDES                      */
 /* ================================================== */
 #include "../inc/Transform.h"
+#include "../../config.h"
 #include "Assert_Common.h"
 #include "AtomicFlag.h"
-#include "ForLoop.h"
 #include "HelperUtils.h"
 #include "LFfifo.h"
 #include <pthread.h>
 #include <semaphore.h>
 #include <stdint.h>
+
+#ifdef DISPLAY_COLORS
+#    include "FrameColors_Utils.h"
+#else
+#    include "FrameRaw_Utils.h"
+#endif
 
 /* ================================================== */
 /*            GLOBAL VARIABLE DEFINITIONS             */
@@ -39,86 +45,6 @@ static struct timespec timeOut = {.tv_nsec = 0, .tv_sec = 1};
 /* ================================================== */
 /*                 FUNCTION DEFINITIONS               */
 /* ================================================== */
-
-/* ================================================== */
-/*                      RENDER BUF API                */
-/* ================================================== */
-static transform_err_t GetRenderBuf(Render_Frame_t** pRenderOut, uint64_t cells) {
-    // Validate inputs
-    if (!pRenderOut || cells == 0) {
-        return TRANSFORM_ERR_SYSTEM;
-    }
-
-    *pRenderOut = NULL;
-
-    // Overflow guard (cells * sizeof(T))
-    if (cells > (UINT64_MAX / sizeof(pressure_t)) || cells > (UINT64_MAX / sizeof(velocity_t))) {
-        return TRANSFORM_ERR_SYSTEM;
-    }
-
-    Render_Frame_t* pBuf = (Render_Frame_t*)calloc(1, sizeof(Render_Frame_t));
-    if (!pBuf) {
-        return TRANSFORM_ERR_SYSTEM;
-    }
-
-    // Allocate pressure field
-    pBuf->pressure = (pressure_t*)malloc(sizeof(pressure_t) * cells);
-    if (!pBuf->pressure) {
-        goto fail;
-    }
-
-    // Allocate X velocity field
-    pBuf->ux = (velocity_t*)malloc(sizeof(velocity_t) * cells);
-    if (!pBuf->ux) {
-        goto fail;
-    }
-
-    // Allocate Y velocity field
-    pBuf->uy = (velocity_t*)malloc(sizeof(velocity_t) * cells);
-    if (!pBuf->uy) {
-        goto fail;
-    }
-
-    *pRenderOut = pBuf;
-    return TRANSFORM_SUCCESS;
-
-fail:
-    // free safely on partial construction
-    free(pBuf->pressure);
-    free(pBuf->ux);
-    free(pBuf->uy);
-    free(pBuf);
-    return TRANSFORM_ERR_SYSTEM;
-}
-
-static transform_err_t YeildRenderBuf(Render_Frame_t* pRender) {
-    ASSERT_COMMON(pRender && pRender->pressure && pRender->ux && pRender->uy, "Got NULL ptr");
-    free(pRender->pressure);
-    free(pRender->ux);
-    free(pRender->uy);
-    free(pRender);
-    return TRANSFORM_SUCCESS;
-}
-
-/* ================================================== */
-/*                 Transform Thread API               */
-/* ================================================== */
-
-static transform_err_t ConvertSnapToRenderFrame(SimSnap_t* pSnap, Render_Frame_t* pRenderFrame) {
-    ASSERT_COMMON(pSnap, "Got a NULL pSnap");
-    ASSERT_COMMON(pRenderFrame, "Got a NULL pRenderFrame");
-    pRenderFrame->nx = pSnap->nx;
-    pRenderFrame->ny = pSnap->ny;
-
-    FOR_LOOP_COMMON(i, pSnap->nx) {
-        FOR_LOOP_COMMON(j, pSnap->ny) {
-            pRenderFrame->ux[pSnap->nx * i + j] = pSnap->cells[i][j].ux;
-            pRenderFrame->uy[pSnap->nx * i + j] = pSnap->cells[i][j].uy;
-            pRenderFrame->pressure[pSnap->nx * i + j] = pSnap->cells[i][j].p;
-        }
-    }
-    return TRANSFORM_SUCCESS;
-}
 
 static void SimSnap_FifoFlush(void) {
     SimSnap_t* pSimSnap = NULL;
@@ -152,22 +78,45 @@ static void* Task_TransformService(void* pvArgs) {
         }
 
         SimSnap_t* pSimSnap = NULL;
-        Render_Frame_t* pRenderFrame = NULL;
         err_LF_Fifo_t r = LF_Fifo_TimedPop(pSimSnapFifo, &pSimSnap, &timeOut);
         if (r == LF_FIFO_FAIL_TIMED_POP) {
             continue;
         }
 
-        // TODO: convert to Render_Frame_t
-        // ConvertSnapToOpenGL(pSimSnap, ...);
-        // TODO: send to renderer
-        // LOG("Rxd a sim_snap");
-        ASSERT_COMMON_POSIX(GetRenderBuf(&pRenderFrame, pSimSnap->nx * pSimSnap->ny),
-                            "Failed to get render buf");
-        ASSERT_COMMON_POSIX(ConvertSnapToRenderFrame(pSimSnap, pRenderFrame), "Failed to convert");
-        ASSERT_COMMON_POSIX(Render_Send_Frame(pRenderFrame), "Failed to send to render service");  // UNCOMMENT THIS
-        // ASSERT_COMMON_POSIX(YeildRenderBuf(pRenderFrame), "Failed to free render frame");
+#ifdef DISPLAY_COLORS
+        // Ensure the render window is divisible by the simulation grid
+        ASSERT_COMMON((RENDER_WINDOW_HEIGHT % pSimSnap->ny) == 0,
+                      "RENDER_WINDOW_HEIGHT must be divisible by simulation ny: Val of op is %lu, "
+                      "RENDER_WINDOW_HEIGHT = %u  SimSnap.ny = %lu",
+                      RENDER_WINDOW_HEIGHT % pSimSnap->ny, RENDER_WINDOW_HEIGHT, pSimSnap->ny);
+
+        ASSERT_COMMON(RENDER_WINDOW_WIDTH % pSimSnap->nx == 0,
+                      "RENDER_WINDOW_WIDTH must be divisible by simulation nx");
+
+        // Ensure square scaling factor (pixels per cell)
+        ASSERT_COMMON((RENDER_WINDOW_HEIGHT / pSimSnap->ny) == (RENDER_WINDOW_WIDTH / pSimSnap->nx),
+                      "Scaling factor mismatch: pixels per cell must be square");
+
+        Render_Frame_Colors_t* pRenderFrame = NULL;
+        ASSERT_COMMON_POSIX(
+            Init_ColorFrame(&pRenderFrame, RENDER_WINDOW_WIDTH, RENDER_WINDOW_HEIGHT),
+            "Failed to get render buf");
+        ASSERT_COMMON_POSIX(Snap2ColorFrame(pSimSnap, pRenderFrame), "Faield to convert");
+        ASSERT_COMMON_POSIX(Render_Send_Frame_Colors(pRenderFrame),
+                            "Fialed to send to rednered serive");
+        ASSERT_COMMON_POSIX(TransForm_ColorFrameYeild(pRenderFrame), "Fialed to free render frame");
         ASSERT_COMMON_POSIX(Sim_SimSnap_Yeild(pSimSnap), "Aint no way");
+
+#else
+        Render_Frame_t* pRenderFrame = NULL;
+        ASSERT_COMMON_POSIX(Init_RawFrame(&pRenderFrame, pSimSnap->nx * pSimSnap->ny),
+                            "Failed to get render buf");
+        ASSERT_COMMON_POSIX(Snap2RawFrame(pSimSnap, pRenderFrame), "Faield to convert");
+        ASSERT_COMMON_POSIX(Render_Send_Frame(pRenderFrame), "Fialed to send to rednered serive");
+        // ASSERT_COMMON_POSIX(TransForm_RawFrameYeild(pRenderFrame), "Fialed to free render
+        // frame");
+        ASSERT_COMMON_POSIX(Sim_SimSnap_Yeild(pSimSnap), "Aint no way");
+#endif
     }
 
     return NULL;

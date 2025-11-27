@@ -15,8 +15,10 @@ OS_TYPE := $(shell uname -s)
 C_FLAGS = \
 		 -Wextra	\
 		 -Wall	\
-		 -O0	\
+		 -O0 	\
 		 -g3 	\
+		 -MMD \
+		 -MP
 
 LD_FLAGS = \
 		  -lm	\
@@ -32,6 +34,8 @@ SRC_FILES = \
 			src/Sim/src/PressureSolver.c \
 			src/Sim/src/SimDebugUtils.c \
 			src/Transform/src/Transform.c \
+			src/Transform/src/FrameColors_Utils.c \
+			src/Transform/src/FrameRaw_Utils.c \
 			src/Transform/src/HelperUtils.c \
 			src/Render/src/Renderer.c	\
 		   
@@ -59,12 +63,8 @@ ifeq ($(OS_TYPE),Linux)
 				-lGL
 endif
 
-#ifeq($(OS_NAME),Darwin)
-#	LD_FLAGS += \
-#	-framework OpenGL
-#endif
-
 OBJS = $(patsubst src/%.c,$(BUILD_DIR)/%.o,$(SRC_FILES))
+DEPS = $(OBJS:.o=.d)
 
 .PHONY : clean all
 
@@ -77,9 +77,13 @@ $(LIB):
 $(TARGET) : $(OBJS) $(LIB) | $(BUILD_DIR)
 	$(CC) -o $@ $(OBJS) $(LIB) $(LD_FLAGS) 
 
-$(BUILD_DIR)/%.o: src/%.c
+# Compile object files and generate dependency files
+$(BUILD_DIR)/%.o: src/%.c | $(BUILD_DIR)
 	mkdir -p $(dir $@)
 	$(CC) $(C_FLAGS) $(INCLUDES) -c $< -o $@
+
+# Include dependency files if they exist
+-include $(DEPS)
 
 $(BUILD_DIR):
 	mkdir -p $@
@@ -88,5 +92,3 @@ clean :
 	rm -rf ./$(BUILD_DIR)
 	rm -rf $(TARGET)
 	$(MAKE) -C $(LIB_DIR) clean
-
-

@@ -9,11 +9,11 @@
 #    include <OpenGL/gl.h>
 #endif
 
+#define WIDTH (RENDER_WINDOW_WIDTH)
+#define HEIGHT (RENDER_WINDOW_HEIGHT)
+
 static Render_Frame_t* gCurrentFrame = NULL;
 static Render_Frame_Colors_t* gCurrentFrameColors = NULL;
-
-#define HEIGHT 480
-#define WIDTH 640
 
 static GLFWwindow* gWindow = NULL;
 static int gWinW = WIDTH, gWinH = HEIGHT;
