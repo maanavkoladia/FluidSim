@@ -2,13 +2,19 @@
 #include "Assert_Common.h"
 #include "ForLoop.h"
 #include "LOG.h"
-#include "Render/inc/Renderer.h"
 #include "Render/inc/Helpers.h"
+#include "Render/inc/Renderer.h"
 #include "Sim/inc/Sim.h"
 #include "Transform/inc/Transform.h"
 #include "config.h"
 #include <unistd.h>
-#include <GL/gl.h>
+
+#if defined(__APPLE__)
+#    include <OpenGL/gl.h>
+#elif defined(__linux__)
+#    include <GL/gl.h>
+#endif
+
 #include <time.h>
 
 sim_params_t simParams = {.nx = 64,
@@ -43,14 +49,14 @@ int main(int argc, char** argv) {
 #ifdef RUN_RENDERER
     while (!Render_ShouldClose()) {
         glClear(GL_COLOR_BUFFER_BIT);
-        
-#ifdef DISPLAY_COLORS
-        draw_frame_colors();  // Draw color frame (velocity as colors)
-#else
-        draw_pressure();      // Draw pressure colors
-        draw_velocities();    // Draw velocity arrows
-#endif
-        draw_grid();          // Draw grid
+
+#    ifdef DISPLAY_COLORS
+        draw_frame_colors(); // Draw color frame (velocity as colors)
+#    else
+        draw_pressure();   // Draw pressure colors
+        draw_velocities(); // Draw velocity arrows
+#    endif
+        draw_grid(); // Draw grid
         Render_SwapBuffers();
         Render_PollEvents();
     }
