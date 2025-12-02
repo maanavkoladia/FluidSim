@@ -8,6 +8,7 @@
 #include "../../Transform/inc/Transform.h"
 // #include "../inc/Helpers.h"
 #include "../inc/Renderer.h"
+#include "AtomicFlag.h"
 #include "LFfifo.h"
 #include <GLFW/glfw3.h>
 #include <pthread.h>
@@ -21,6 +22,8 @@
 
 #define WIDTH (RENDER_WINDOW_WIDTH)
 #define HEIGHT (RENDER_WINDOW_HEIGHT)
+
+static AtomicFlag_t killFlag;
 
 // static Render_Frame_t* gCurrentFrame = NULL;
 static Render_Frame_Colors_t* gCurrentFrameColors = NULL;
@@ -205,6 +208,7 @@ static void Render_ServeRawFrame(void) {
     while (LF_Fifo_SpinPop(frameInFifo, &pFrame) == LF_FIFO_FAIL_TRY_POP) {
         sched_yield();
     }
+
     ASSERT_COMMON_NOT_NULL(pFrame);
     draw_grid(pFrame);
     draw_pressure(pFrame);
@@ -295,7 +299,9 @@ static void* Task_Renderer(void* pvArgs) {
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     LOG("Render Loop started");
     while (!Render_ShouldClose()) {
-
+        if (AtomicFlag_GetStatus(&killFlag) == FLAG_SET) {
+            return NULL;
+        }
         Render_Draw();
 
         Render_SwapBuffers();
@@ -311,7 +317,7 @@ GLFWwindow* Render_GetWindow(void) {
 
 render_err_t Render_Init(void) {
     LOG("Render Starting Up");
-
+    AtomicFlag_Clear(&killFlag);
     // create the sim snap fifo
     LF_Fifo_Init(&frameInFifo, FRAME_IN_FIFO_SIZE);
 
@@ -322,6 +328,9 @@ render_err_t Render_Init(void) {
 }
 
 render_err_t Render_Dtr(void) {
+    AtomicFlag_Set(&killFlag);
+    pthread_join(renderer_main_th, NULL);
+    LOG("Render thread exited");
     ASSERT_COMMON(gWindow, "Trying to destroy NULL window");
     glfwDestroyWindow(gWindow);
     gWindow = NULL;
