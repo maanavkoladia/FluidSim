@@ -1,13 +1,15 @@
 #define GL_SILENCE_DEPRECATION
 #include "../inc/Renderer.h"
 #include "../../../mpsLibC/common/Assert_Common.h"
-#include "../inc/Helpers.h"
 #include "../../Transform/inc/Transform.h"
+#include "../inc/Helpers.h"
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 
-#ifdef __APPLE__
+#if defined(__APPLE__)
 #    include <OpenGL/gl.h>
+#elif defined(__linux__)
+#    include <GL/gl.h>
 #endif
 
 #define WIDTH (RENDER_WINDOW_WIDTH)
@@ -65,7 +67,7 @@ void draw_velocities(void) {
 
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
-            int ux_idx = nx * i + j;  // Changed to column-major
+            int ux_idx = nx * i + j; // Changed to column-major
             if (ux_idx < nx * ny) {
                 float ux_val = (float)gCurrentFrame->ux[ux_idx];
 
@@ -80,7 +82,7 @@ void draw_velocities(void) {
 
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
-            int uy_idx = nx * i + j;  // Changed to column-major
+            int uy_idx = nx * i + j; // Changed to column-major
             if (uy_idx < nx * ny) {
                 float uy_val = (float)gCurrentFrame->uy[uy_idx];
 
@@ -119,7 +121,7 @@ void draw_pressure(void) {
 
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
-            int p_idx = nx * i + j;  // Changed from j * nx + i to column-major
+            int p_idx = nx * i + j; // Changed from j * nx + i to column-major
             double p = gCurrentFrame->pressure[p_idx];
 
             double t = (p - pMin) / pRange;
@@ -161,7 +163,7 @@ void draw_frame_colors(void) {
         for (int y = 0; y < height; y++) {
             int idx = y * width + x;
             Color_t* color = &gCurrentFrameColors->colors[idx];
-            
+
             glColor3f(color->r, color->g, color->b);
 
             float x0 = -1.0f + (2.0f * x / width);
@@ -259,23 +261,23 @@ render_err_t Render_Dtr(void) {
     return RENDER_SUCCESS;
 }
 
-render_err_t Render_Send_Frame_Colors(Render_Frame_Colors_t* pFrameIn){
+render_err_t Render_Send_Frame_Colors(Render_Frame_Colors_t* pFrameIn) {
     if (!pFrameIn) {
         return RENDER_FAIL;
     }
-    
+
     if (!pFrameIn->colors) {
         return RENDER_FAIL;
     }
-    
+
     if (pFrameIn->width <= 0 || pFrameIn->height <= 0) {
         return RENDER_FAIL;
     }
-    
+
     if (gCurrentFrameColors) {
         Transform_YeildRender_Frame_Colors(gCurrentFrameColors);
     }
-    
+
     gCurrentFrameColors = pFrameIn;
     return RENDER_SUCCESS;
 }
