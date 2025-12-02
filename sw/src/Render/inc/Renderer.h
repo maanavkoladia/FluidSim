@@ -4,6 +4,7 @@
 #define RENDER_WINDOW_HEIGHT (480)
 #define RENDER_WINDOW_WIDTH (640)
 
+#define FRAME_IN_FIFO_SIZE ((1 << 10) - 1)
 typedef enum {
     RENDER_SUCCESS = 0,
     RENDER_FAIL = 1,
@@ -39,10 +40,6 @@ render_err_t Render_Init(void);
 render_err_t Render_Dtr(void);
 render_err_t Render_Send_Frame(Render_Frame_t* pFrameIn);
 render_err_t Render_Send_Frame_Colors(Render_Frame_Colors_t* pFrameIn);
-
-int Render_ShouldClose(void);
-void Render_SwapBuffers(void);
-void Render_PollEvents(void);
 
 // render_err_t Render_Frame_Init(Render_Frame_t** pFrameOut, ...);
 //

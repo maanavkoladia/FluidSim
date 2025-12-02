@@ -11,7 +11,7 @@
 /* ================================================== */
 
 #define GRAVITY_CONST (-9.81)
-#define INITIAL_CELL_U_X (10)
+#define INITIAL_CELL_U_X (40)
 #define INITIAL_CELL_U_Y (10)
 #define INITIAL_CELL_P (10)
 

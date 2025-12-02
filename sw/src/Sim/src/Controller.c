@@ -80,6 +80,7 @@ sim_err_t Sim_SimSnap_Yeild(SimSnap_t* pSnap) {
     ASSERT_COMMON(pSnap, "NULL snap yeild");
     FreeCells(pSnap->cells, pSnap->nx);
     free(pSnap);
+
     // LOG("Freed Yeild Snap");
     return SIM_SUCCESS;
 }
@@ -163,10 +164,6 @@ SimSnap_t* CreateSimSnap(SimState_t* state) {
     CopyCells(res->cells, GetCells(state), res->nx, res->ny);
     return res;
 }
-
-#include <math.h>
-#include <stdbool.h>
-#include <stdint.h>
 
 void InjectVelocityRect(SimState_t* sim, uint64_t x0, uint64_t y0, // lower-left corner (inclusive)
                         uint64_t x1, uint64_t y1,                  // upper-right corner (exclusive)
