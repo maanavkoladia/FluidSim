@@ -164,6 +164,47 @@ SimSnap_t* CreateSimSnap(SimState_t* state) {
     return res;
 }
 
+#include <stdint.h>
+#include <stdbool.h>
+#include <math.h>
+
+void InjectVelocityRect(
+    SimState_t* sim,
+    uint64_t x0, uint64_t y0,     // lower-left corner (inclusive)
+    uint64_t x1, uint64_t y1,     // upper-right corner (exclusive)
+    double ux, double uy          // velocity to inject
+) {
+    if (!sim) return;
+
+    Cell_t** cells = sim->using_cells1 ? sim->cells1 : sim->cells2;
+
+    // Clamp bounds to grid
+    if (x1 > sim->nx) x1 = sim->nx;
+    if (y1 > sim->ny) y1 = sim->ny;
+
+    for (uint64_t y = y0; y < y1; y++) {
+        for (uint64_t x = x0; x < x1; x++) {
+            Cell_t* c = &cells[y][x];
+            c->ux += ux;
+            c->uy += uy;
+        }
+    }
+}
+
+void InjectVelocityCenter(SimSnap_t* sim){
+    uint64_t cx = sim->nx / 2;
+    uint64_t cy = sim->ny / 2;
+    uint64_t half_size = 2; // size = 2*half_size
+    InjectVelocityRect(
+    sim,
+    cx - half_size, cy - half_size,
+    cx + half_size, cy + half_size,
+    3.0, 0.0   // example: rightward velocity
+);
+
+}
+
+
 static sim_err_t RunOnePassOver(SimState_t* pSimState) {
     ASSERT_COMMON(pSimState, "Got a NULL Sim State");
     // run psolver
@@ -194,14 +235,15 @@ static void* Task_Controller(void* pvArgs) {
     SimState_t* pSimState = NULL;
     uint64_t cycleCount = 0;
     CopyInArgs(pvArgs, &simParams);
-
+    //Inject velocity
     ASSERT_COMMON_POSIX(InitSimState(&simParams, &pSimState), "Failed to init simState Structure");
+    InjectVelocityCenter(pSimState);
     while (1) {
         if (AtomicFlag_GetStatus(&killFlag) == KILL_FLAG_SET) {
             FreeSimState(pSimState);
             return TASK_CONTROLLER_RET;
         }
-        // LOG("Ran TimeStep: %lu", cycleCount);
+        //LOG("Ran TimeStep: %lu", cycleCount);
         ASSERT_COMMON_POSIX(RunOnePassOver(pSimState), "Failed on passover %llu", cycleCount);
         cycleCount++;
         // sleep(1);

@@ -8,7 +8,7 @@
 #include "Transform/inc/Transform.h"
 #include "config.h"
 #include <unistd.h>
-#include <OpenGL/gl.h>
+#include <GL/gl.h>
 #include <time.h>
 
 sim_params_t simParams = {.nx = 64,
