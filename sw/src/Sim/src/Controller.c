@@ -8,12 +8,12 @@
 #include "LOG.h"
 #include "PressureSolver.h"
 #include "SimTypes.h"
+#include <math.h>
 #include <pthread.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <math.h>
 
 #define TASK_CONTROLLER_RET (NULL)
 
@@ -164,15 +164,13 @@ SimSnap_t* CreateSimSnap(SimState_t* state) {
     return res;
 }
 
-#include <stdint.h>
-#include <stdbool.h>
 #include <math.h>
+#include <stdbool.h>
+#include <stdint.h>
 
-void InjectVelocityRect(
-    SimState_t* sim,
-    uint64_t x0, uint64_t y0,     // lower-left corner (inclusive)
-    uint64_t x1, uint64_t y1,     // upper-right corner (exclusive)
-    double ux, double uy          // velocity to inject
+void InjectVelocityRect(SimState_t* sim, uint64_t x0, uint64_t y0, // lower-left corner (inclusive)
+                        uint64_t x1, uint64_t y1,                  // upper-right corner (exclusive)
+                        double ux, double uy                       // velocity to inject
 ) {
     if (!sim) return;
 
@@ -191,19 +189,14 @@ void InjectVelocityRect(
     }
 }
 
-void InjectVelocityCenter(SimSnap_t* sim){
+void InjectVelocityCenter(SimState_t* sim) {
     uint64_t cx = sim->nx / 2;
     uint64_t cy = sim->ny / 2;
     uint64_t half_size = 2; // size = 2*half_size
-    InjectVelocityRect(
-    sim,
-    cx - half_size, cy - half_size,
-    cx + half_size, cy + half_size,
-    3.0, 0.0   // example: rightward velocity
-);
-
+    InjectVelocityRect(sim, cx - half_size, cy - half_size, cx + half_size, cy + half_size, 3.0,
+                       0.0 // example: rightward velocity
+    );
 }
-
 
 static sim_err_t RunOnePassOver(SimState_t* pSimState) {
     ASSERT_COMMON(pSimState, "Got a NULL Sim State");
@@ -235,7 +228,7 @@ static void* Task_Controller(void* pvArgs) {
     SimState_t* pSimState = NULL;
     uint64_t cycleCount = 0;
     CopyInArgs(pvArgs, &simParams);
-    //Inject velocity
+    // Inject velocity
     ASSERT_COMMON_POSIX(InitSimState(&simParams, &pSimState), "Failed to init simState Structure");
     InjectVelocityCenter(pSimState);
     while (1) {
@@ -243,7 +236,7 @@ static void* Task_Controller(void* pvArgs) {
             FreeSimState(pSimState);
             return TASK_CONTROLLER_RET;
         }
-        //LOG("Ran TimeStep: %lu", cycleCount);
+        // LOG("Ran TimeStep: %lu", cycleCount);
         ASSERT_COMMON_POSIX(RunOnePassOver(pSimState), "Failed on passover %llu", cycleCount);
         cycleCount++;
         // sleep(1);

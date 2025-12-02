@@ -21,8 +21,8 @@ static Render_Frame_Colors_t* gCurrentFrameColors = NULL;
 static GLFWwindow* gWindow = NULL;
 static int gWinW = WIDTH, gWinH = HEIGHT;
 
-#define GRID_NX 10
-#define GRID_NY 10
+#define GRID_NX (10)
+#define GRID_NY (10)
 
 void draw_grid(void) {
     int nx = 5, ny = 5;
@@ -275,7 +275,7 @@ render_err_t Render_Send_Frame_Colors(Render_Frame_Colors_t* pFrameIn) {
     }
 
     if (gCurrentFrameColors) {
-        Transform_YeildRender_Frame_Colors(gCurrentFrameColors);
+        TransForm_ColorFrameYeild(gCurrentFrameColors);
     }
 
     gCurrentFrameColors = pFrameIn;
