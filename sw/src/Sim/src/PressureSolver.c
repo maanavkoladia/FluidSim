@@ -17,6 +17,7 @@
 /*            GLOBAL VARIABLE DEFINITIONS             */
 /* ================================================== */
 #define NUMBER_OF_PSLOVE_ITERATIONS 8
+#define SUCCESSIVE_OVER_RELAXATION 1.7
 /* ================================================== */
 /*            FUNCTION PROTOTYPES (DECLARATIONS)      */
 /* ================================================== */
@@ -77,7 +78,9 @@ void PressureSolverCell(uint64_t x, uint64_t y, SimState_t* g_sim_state, Cell_t*
     double pressureSum = (pressureTop + pressureBot + pressureLeft + pressureRight);
     double initVelocityCalc = (velocityRight - velocityLeft + velocityTop - velocityBot);
     double deltaTime = g_sim_state->dt;
-    cell_buffer[x][y].p = (pressureSum - (density * width * (initVelocityCalc) / deltaTime)) / edge_count;
+    double newPressure = (pressureSum - (density * width * (initVelocityCalc) / deltaTime)) / edge_count;
+    double oldPressure = current_cells[x][y].p;
+    cell_buffer[x][y].p = oldPressure + (newPressure - oldPressure) * SUCCESSIVE_OVER_RELAXATION;
 }
 
 sim_err_t PressureSolveIteration(SimState_t* sim_state, Cell_t** cells, Cell_t** buffer) {
