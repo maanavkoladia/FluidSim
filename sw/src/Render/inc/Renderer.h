@@ -3,10 +3,8 @@
 #include "../../config.h"
 #include <stdint.h>
 
-#define RENDER_WINDOW_HEIGHT (480 * 4)
-#define RENDER_WINDOW_WIDTH (640 * 4)
-
 #define FRAME_IN_FIFO_SIZE ((1 << 10) - 1)
+
 typedef enum {
     RENDER_SUCCESS = 0,
     RENDER_FAIL = 1,
@@ -40,7 +38,9 @@ typedef struct {
 
 render_err_t Render_Init(void);
 render_err_t Render_Dtr(void);
-render_err_t Render_Send_Frame(Render_Frame_t* pFrameIn);
+
+render_err_t Render_Send_Raw_Frame(Render_Frame_t* pFrameIn);
+
 render_err_t Render_Send_Frame_Colors(Render_Frame_Colors_t* pFrameIn);
 
 // render_err_t Render_Frame_Init(Render_Frame_t** pFrameOut, ...);

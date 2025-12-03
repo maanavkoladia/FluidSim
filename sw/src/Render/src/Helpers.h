@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Renderer.h"
+#include "../inc/Renderer.h"
 typedef struct GLFWwindow GLFWwindow;
 
 // void draw_grid(Render_Frame_t* pFrame);
