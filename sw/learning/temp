@@ -1,0 +1,156 @@
+#include "Advection.h"
+#include "Assert_Common.h"
+#include "Controller.h"
+#include "ForLoop.h"
+#include "LOG.h"
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
+
+// Clamp a value between min and max
+double clamp(double value, double minVal, double maxVal) {
+    if (value < minVal) return minVal;
+    if (value > maxVal) return maxVal;
+    return value;
+}
+
+// Clamp a value between 0 and 1
+double clamp01(double value) {
+    if (value < 0.0f) return 0.0f;
+    if (value > 1.0f) return 1.0f;
+    return value;
+}
+
+// Linear interpolation: mix a and b by t
+double lerp(double a, double b, double t) {
+    return a + t * (b - a);
+}
+double InterpolateVelocityX(SimState_t* sim_state, double world_pos_x, double world_pos_y) {
+    ASSERT_COMMON_NOT_NULL(sim_state);
+
+    uint64_t nx        = sim_state->nx;   // number of x-edges in X direction
+    uint64_t ny        = sim_state->ny;   // number of x-edges in Y direction
+    double   cell_size = sim_state->w;
+
+    // Physical domain size (same as Unity's boundsSize.x / boundsSize.y)
+    double width  = (nx - 1) * cell_size;
+    double height = (ny - 1) * cell_size;
+
+    // Map world position (centered at 0) -> index space [0, nx], [0, ny]
+    double px = (world_pos_x + width  / 2.0) / cell_size;
+    double py = (world_pos_y + height / 2.0) / cell_size;
+
+    // Integer cell corners
+    double px_clamped = clamp(px, 0.0, (double)(nx - 2));
+    double py_clamped = clamp(py, 0.0, (double)(ny - 2));
+
+    uint64_t left   = (uint64_t)px_clamped;
+    uint64_t bottom = (uint64_t)py_clamped;
+    uint64_t right  = left + 1;
+    uint64_t top    = bottom + 1;
+
+    // Fractions inside the cell
+    double x_fraction = clamp01(px - (double)left);
+    double y_fraction = clamp01(py - (double)bottom);
+
+    Cell_t** cells = GetCellsInUse(sim_state);
+
+    // Bilinear interpolation on ux field
+    double top_valueX    = lerp(cells[left][top].ux,    cells[right][top].ux,    x_fraction);
+    double bottom_valueX = lerp(cells[left][bottom].ux, cells[right][bottom].ux, x_fraction);
+    double newX_velocity = lerp(bottom_valueX, top_valueX, y_fraction);
+
+    return newX_velocity;
+}
+double InterpolateVelocityY(SimState_t* sim_state, double world_pos_x, double world_pos_y) {
+    ASSERT_COMMON_NOT_NULL(sim_state);
+
+    uint64_t nx        = sim_state->nx;   // number of y-edges in X direction
+    uint64_t ny        = sim_state->ny;   // number of y-edges in Y direction
+    double   cell_size = sim_state->w;
+
+    double width  = (nx - 1) * cell_size;
+    double height = (ny - 1) * cell_size;
+
+    double px = (world_pos_x + width  / 2.0) / cell_size;
+    double py = (world_pos_y + height / 2.0) / cell_size;
+
+    double px_clamped = clamp(px, 0.0, (double)(nx - 2));
+    double py_clamped = clamp(py, 0.0, (double)(ny - 2));
+
+    uint64_t left   = (uint64_t)px_clamped;
+    uint64_t bottom = (uint64_t)py_clamped;
+    uint64_t right  = left + 1;
+    uint64_t top    = bottom + 1;
+
+    double x_fraction = clamp01(px - (double)left);
+    double y_fraction = clamp01(py - (double)bottom);
+
+    Cell_t** cells = GetCellsInUse(sim_state);
+
+    double top_valueY    = lerp(cells[left][top].uy,    cells[right][top].uy,    x_fraction);
+    double bottom_valueY = lerp(cells[left][bottom].uy, cells[right][bottom].uy, x_fraction);
+    double newY_velocity = lerp(bottom_valueY, top_valueY, y_fraction);
+
+    return newY_velocity;
+}
+sim_err_t AdvectVelocity(SimState_t* state) {
+    ASSERT_COMMON_NOT_NULL(state);
+
+    double cell_size = state->w;
+
+    // Domain width/height in world space
+    double cell_width  = (state->nx - 1) * cell_size;
+    double cell_height = (state->ny - 1) * cell_size;
+
+    // Bottom-left of the domain (Unity: bottomLeft = -boundsSize/2)
+    double bottom_left_x = -cell_width  / 2.0;
+    double bottom_left_y = -cell_height / 2.0;
+
+    Cell_t** new_cells = GetCellNextInUse(state);
+
+    for (uint64_t i = 0; i < state->nx; i++) {
+        for (uint64_t j = 0; j < state->ny; j++) {
+            //
+            // 1) Advect X velocity (ux) stored at LEFT EDGE centre
+            //
+            // Unity: LeftEdgeCentre(x,y) = CellCentre(x,y) - (halfCellSize, 0)
+            //       = (-W/2 + x*h, -H/2 + (y+0.5)*h)
+            double horizontal_worldX = bottom_left_x + (double)i * cell_size;
+            double horizontal_worldY = bottom_left_y + ((double)j + 0.5) * cell_size;
+
+            double horizontal_velX =
+                InterpolateVelocityX(state, horizontal_worldX, horizontal_worldY);
+            double horizontal_velY =
+                InterpolateVelocityY(state, horizontal_worldX, horizontal_worldY);
+
+            double prev_horizontal_worldX = horizontal_worldX - horizontal_velX * state->dt;
+            double prev_horizontal_worldY = horizontal_worldY - horizontal_velY * state->dt;
+
+            new_cells[i][j].ux =
+                InterpolateVelocityX(state, prev_horizontal_worldX, prev_horizontal_worldY);
+
+            //
+            // 2) Advect Y velocity (uy) stored at BOTTOM EDGE centre
+            //
+            // Unity: BottomEdgeCentre(x,y) = CellCentre(x,y) - (0, halfCellSize)
+            //       = (-W/2 + (x+0.5)*h, -H/2 + y*h)
+            double vertical_worldX = bottom_left_x + ((double)i + 0.5) * cell_size;
+            double vertical_worldY = bottom_left_y + (double)j * cell_size;
+
+            double vertical_velX =
+                InterpolateVelocityX(state, vertical_worldX, vertical_worldY);
+            double vertical_velY =
+                InterpolateVelocityY(state, vertical_worldX, vertical_worldY);
+
+            double prev_vertical_worldX = vertical_worldX - vertical_velX * state->dt;
+            double prev_vertical_worldY = vertical_worldY - vertical_velY * state->dt;
+
+            new_cells[i][j].uy =
+                InterpolateVelocityY(state, prev_vertical_worldX, prev_vertical_worldY);
+        }
+    }
+
+    Sim_State_SwapCellsInUse(state);
+    return SIM_SUCCESS;
+}

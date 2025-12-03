@@ -208,8 +208,8 @@ static void InjectVelocityCenter(SimState_t* sim) {
     uint64_t cx = sim->nx / 2;
     uint64_t cy = sim->ny / 2;
     uint64_t half_size = 2; // size = 2*half_size
-    InjectVelocityRect(sim, cx - half_size, cy - half_size, cx + half_size, cy + half_size, 30.0,
-                       0.0 // example: rightward velocity
+    InjectVelocityRect(sim, cx - half_size, cy - half_size, cx + half_size, cy + half_size, 1.0,
+                       1.0 // example: rightward velocity
     );
 }
 
@@ -217,16 +217,17 @@ static sim_err_t RunOnePassOver(SimState_t* pSimState) {
     ASSERT_COMMON(pSimState, "Got a NULL Sim State");
     // run psolver
     // LOG("Starting PressureSolver Passover");
-    ASSERT_COMMON_POSIX(PressureSolver(pSimState), "Something in pSolve shat itself");
+    ASSERT_COMMON_POSIX(RunPressureSolver(pSimState), "Something in pSolve shat itself");
 
     // run adection
-
-    // ASSERT_COMMON_POSIX(AdvectVelocity(pSimState), "Something in pSolve shat itself");
-
-    // Send SimSnap frame
+// Send SimSnap frame
     SimSnap_t* single_snap = CreateSimSnap(pSimState);
     while (Transform_SendNewSimSnap(single_snap) != TRANSFORM_SUCCESS) {
     }
+
+    ASSERT_COMMON_POSIX(AdvectVelocity(pSimState), "Something in pSolve shat itself");
+
+    
     // Sim_SimSnap_Yeild(single_snap);
     return SIM_SUCCESS;
 }
