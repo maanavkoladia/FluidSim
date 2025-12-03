@@ -1,9 +1,10 @@
 #pragma once
 
+#include "Renderer.h"
 typedef struct GLFWwindow GLFWwindow;
 
-void draw_grid(void);
-void draw_velocities(void);
-void draw_pressure(void);
-GLFWwindow* Render_GetWindow(void);
-void draw_frame_colors(void);
+// void draw_grid(Render_Frame_t* pFrame);
+// void draw_velocities(Render_Frame_t* pFrame);
+// void draw_pressure(Render_Frame_t* pFrame);
+// GLFWwindow* Render_GetWindow(void);
+// void draw_frame_colors(void);
