@@ -17,10 +17,10 @@
 
 #include <time.h>
 
-#define SIM_RUNTIME_S (20)
+#define SIM_RUNTIME_S (30)
 
-sim_params_t simParams = {.nx = 64,
-                          .ny = 48,
+sim_params_t simParams = {.nx = 50,
+                          .ny = 50,
                           .dt = 0.01,                  // simulation timestep in seconds
                           .p_density = 1.0,            // fluid density
                           .w = 0.1,                    // some simulation weight parameter

@@ -26,21 +26,6 @@ double lerp(double a, double b, double t) {
     return a + t * (b - a);
 }
 
-// public Vector2 LeftEdgeCentre(int x, int y)
-// {
-//     float worldX = -Width / 2 + x * CellSize;
-//     float worldY = -Height / 2 + y * CellSize + CellSize * 0.5f;
-
-//     return new Vector2(worldX, worldY);
-// }
-
-// public Vector2 BottomEdgeCentre(int x, int y)
-// {
-//     float worldX = -Width  / 2 + x * CellSize + CellSize * 0.5f;   // horizontal midpoint
-//     float worldY = -Height / 2 + y * CellSize;                     // bottom edge
-
-//     return new Vector2(worldX, worldY);
-// }
 
 double InterpolateVelocityX(SimState_t* sim_state, double world_pos_x, double world_pos_y) {
     ASSERT_COMMON_NOT_NULL(sim_state);
