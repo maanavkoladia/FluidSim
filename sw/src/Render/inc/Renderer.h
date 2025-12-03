@@ -1,6 +1,8 @@
 #pragma once
 
+#include "../../config.h"
 #include <stdint.h>
+
 #define RENDER_WINDOW_HEIGHT (480)
 #define RENDER_WINDOW_WIDTH (480)
 
