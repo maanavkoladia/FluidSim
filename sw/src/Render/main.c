@@ -8,9 +8,13 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#define SIM_RUNTIME_S 5
-#define NX 50
-#define NY 50
+#define SIM_RUNTIME_S (30)
+#define NX 480
+#define NY 480
+
+velocity_t ux_g = -0.03;
+velocity_t uy_g = -0.03;
+// velocity_t growth = .01;
 
 /* -------------------------------------------------
    Allocate a Render_Frame and initialize fields
@@ -54,9 +58,6 @@ void TransForm_RawFrameYeild(Render_Frame_t* pFrame) {
     Destroy_RawFrame(pFrame);
 }
 
-void TransForm_ColorFrameYeild(Render_Frame_Colors_t* pFrame) {
-    LOG("Not yet impleted ");
-}
 /* -------------------------------------------------
    Fill frame with deterministic "fake" values
    (use simple functions so it's easy to debug)
@@ -70,28 +71,145 @@ void CreateFakeFrame(Render_Frame_t* frame) {
     FOR_LOOP_COMMON(i, nx) {
         FOR_LOOP_COMMON(j, ny) {
             int idx = j + i * ny;
-            frame->ux[idx] = (velocity_t)(i);           // horizontal gradient
-            frame->uy[idx] = (velocity_t)(j);           // vertical gradient
+            frame->ux[idx] = ux_g;                      // horizontal gradient
+            frame->uy[idx] = uy_g;                      // vertical gradient
             frame->pressure[idx] = (pressure_t)(i + j); // sum, easy to visualize
+        }
+    }
+    // ux_g += growth;
+    // uy_g += growth;
+}
+
+int Init_ColorFrame(Render_Frame_Colors_t** pFrameOut, uint64_t w, uint64_t h) {
+    ASSERT_COMMON_NOT_NULL(pFrameOut);
+    ASSERT_COMMON(w == RENDER_WINDOW_WIDTH, "Got invalid Color Fram Height");
+    ASSERT_COMMON(h == RENDER_WINDOW_HEIGHT, "Got invalid Color Fram Width");
+    Render_Frame_Colors_t* pFrameBuf =
+        (Render_Frame_Colors_t*)malloc(sizeof(Render_Frame_Colors_t));
+
+    pFrameBuf->height = h;
+    pFrameBuf->width = w;
+    pFrameBuf->colors = (Color_t*)malloc(sizeof(Color_t) * w * h);
+#ifndef NDEBUG
+    ASSERT_COMMON_ALLOC(pFrameBuf->colors);
+#else
+    if (!pFrameBuf->colors) {
+        return TRANSFORM_ERR_SYSTEM;
+    }
+#endif
+    *pFrameOut = pFrameBuf;
+    return EXIT_SUCCESS;
+}
+
+void TransForm_ColorFrameYeild(Render_Frame_Colors_t* pFrame) {
+    ASSERT_COMMON_NOT_NULL(pFrame);
+    ASSERT_COMMON_NOT_NULL(pFrame->colors);
+    free(pFrame->colors);
+    free(pFrame);
+}
+
+void ScrollColorsLeft(Render_Frame_Colors_t* pFrame) {
+    ASSERT_COMMON_NOT_NULL(pFrame);
+    ASSERT_COMMON_NOT_NULL(pFrame->colors);
+
+    uint64_t width = pFrame->width;
+    uint64_t height = pFrame->height;
+
+    // Temporary array to hold the first column
+    Color_t* firstCol = (Color_t*)malloc(sizeof(Color_t) * height);
+    if (!firstCol) return;
+
+    // Copy the first column
+    FOR_LOOP_COMMON(j, height) {
+        firstCol[j] = pFrame->colors[j * width + 0];
+    }
+
+    // Shift all columns left
+    FOR_LOOP_COMMON(i, width - 1) {
+        FOR_LOOP_COMMON(j, height) {
+            pFrame->colors[j * width + i] = pFrame->colors[j * width + (i + 1)];
+        }
+    }
+
+    // Wrap the first column to the last
+    FOR_LOOP_COMMON(j, height) {
+        pFrame->colors[j * width + (width - 1)] = firstCol[j];
+    }
+
+    free(firstCol);
+}
+void CreateFakeFirstColorFrame(Render_Frame_Colors_t* pFrame) {
+    ASSERT_COMMON_NOT_NULL(pFrame);
+    ASSERT_COMMON_NOT_NULL(pFrame->colors);
+
+    uint64_t width = pFrame->width;
+    uint64_t height = pFrame->height;
+
+    FOR_LOOP_COMMON(i, width) {
+        FOR_LOOP_COMMON(j, height) {
+            float tX = (float)i / (float)(width - 1);  // normalized 0..1
+            float tY = (float)j / (float)(height - 1); // normalized 0..1
+
+            Color_t color;
+            color.r = tX;        // red increases left → right
+            color.g = tY;        // green increases bottom → top
+            color.b = 1.0f - tX; // blue decreases left → right
+            color.a = 1.0f;      // fully opaque
+
+            pFrame->colors[j * width + i] = color;
         }
     }
 }
 
-/* -------------------------------------------------
-   Main loop: generate and send frames to renderer
-------------------------------------------------- */
-int main(int argc, char** argv) {
-    (void)argc;
-    (void)argv;
+Render_Frame_Colors_t* CopyColorFrame(Render_Frame_Colors_t* src) {
+    if (!src) return NULL;
 
-    LOG("Fluid Sim Starting Up");
+    Render_Frame_Colors_t* copy = malloc(sizeof(Render_Frame_Colors_t));
+    if (!copy) return NULL;
 
-    /* Initialize renderer */
-    if (Render_Init() != 0) {
-        LOG("Failed to launch render service");
-        return EXIT_FAILURE;
+    copy->width = src->width;
+    copy->height = src->height;
+    copy->colors = malloc(sizeof(Color_t) * src->width * src->height);
+
+    if (!copy->colors) {
+        free(copy);
+        return NULL;
     }
 
+    memcpy(copy->colors, src->colors, sizeof(Color_t) * src->width * src->height);
+    return copy;
+}
+
+void ColorTestLoop(void) {
+    Render_Frame_Colors_t* frame = NULL;
+
+    // Allocate frame ONCE before loop
+    ASSERT_COMMON_POSIX(Init_ColorFrame(&frame, NX, NY), "Failed to init frame");
+    CreateFakeFirstColorFrame(frame);
+
+    for (int frameNum = 0;; frameNum++) {
+        if (frameNum > 0) {
+            ScrollColorsLeft(frame);
+        }
+
+        // **COPY** the frame before sending
+        Render_Frame_Colors_t* frameCopy = CopyColorFrame(frame);
+        if (!frameCopy) {
+            LOG("Failed to copy frame %d", frameNum);
+            break;
+        }
+
+        Render_Send_Frame_Colors(frameCopy);
+        // frameCopy is now owned by renderer
+
+        // usleep(50000);
+    }
+
+    // Clean up the master frame
+    TransForm_ColorFrameYeild(frame);
+}
+
+void RawTestLoop(void) {
     for (int frameNum = 0; frameNum < SIM_RUNTIME_S; frameNum++) {
         Render_Frame_t* frame = NULL;
 
@@ -112,8 +230,27 @@ int main(int argc, char** argv) {
         }
 
         // Destroy_RawFrame(frame);
-        usleep(500 * 1000); // 0.5 sec delay per frame for debug
+        // sleep(1);
+        usleep(50000);
     }
+}
+
+/* -------------------------------------------------
+   Main loop: generate and send frames to renderer
+------------------------------------------------- */
+int main(int argc, char** argv) {
+    (void)argc;
+    (void)argv;
+
+    LOG("Fluid Sim Starting Up");
+
+    /* Initialize renderer */
+    if (Render_Init() != 0) {
+        LOG("Failed to launch render service");
+        return EXIT_FAILURE;
+    }
+
+    ColorTestLoop();
 
     if (Render_Dtr() != 0) {
         LOG("Failed to destroy renderer");

@@ -18,10 +18,15 @@ C_FLAGS = \
 LD_FLAGS = \
 	-lm \
 	-lpthread \
-	-lglfw
+	-lglfw	\
+	-lGL
 
 SRC_FILES = \
 	src/Transform.c \
+	./src/FrameColors_Utils.c	\
+	./src/FrameRaw_Utils.c	\
+	./src/HelperUtils.c	\
+	../Render/src/Renderer.c	\
 	test/TestXForm.c
 
 INCLUDES = \
