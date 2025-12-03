@@ -50,10 +50,13 @@ int main(int argc, char** argv) {
     ASSERT_COMMON_POSIX(Sim_Start(), "Failed to Start Sim");
 #endif
 
+#if defined(__APPLE__)
+#else
     FOR_LOOP_COMMON(i, SIM_RUNTIME_S) {
         sleep(1);
         LOG("Slept for %d sec", i);
     }
+#endif
 
     LOG("Beggning tear down");
 

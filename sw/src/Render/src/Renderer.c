@@ -317,6 +317,18 @@ GLFWwindow* Render_GetWindow(void) {
     return gWindow;
 }
 
+#if defined(__APPLE__)
+render_err_t Render_Init(void) {
+    LOG("Render Starting Up");
+    AtomicFlag_Clear(&killFlag);
+    // create the sim snap fifo
+    LF_Fifo_Init(&frameInFifo, FRAME_IN_FIFO_SIZE);
+    Task_Renderer(NULL);
+    // LOG("Renderer Init Success");
+    return RENDER_SUCCESS;
+}
+
+#else
 render_err_t Render_Init(void) {
     LOG("Render Starting Up");
     AtomicFlag_Clear(&killFlag);
@@ -328,6 +340,8 @@ render_err_t Render_Init(void) {
     LOG("Renderer Init Success");
     return RENDER_SUCCESS;
 }
+
+#endif
 
 render_err_t Render_Dtr(void) {
     AtomicFlag_Set(&killFlag);
