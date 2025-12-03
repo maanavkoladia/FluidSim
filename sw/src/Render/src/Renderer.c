@@ -14,6 +14,7 @@
 #include <GLFW/glfw3.h>
 #include <pthread.h>
 #include <stdio.h>
+#include <math.h>
 
 #if defined(__APPLE__)
 #    include <OpenGL/gl.h>
@@ -103,6 +104,9 @@ static void draw_velocities(Render_Frame_t* pFrame) {
             float x = -1.0f + (2.0f * (i + 0.5f) / nx);
             float y = -1.0f + (2.0f * j / ny);
 
+            
+            LOG("Sample velocity: ux=%.2f uy=%.2f", pFrame->ux[idx], pFrame->uy[idx]);
+
             glVertex2f(x, y);
             glVertex2f(x, y + uy * arrow_scale);
         }
@@ -120,6 +124,7 @@ static void draw_pressure(Render_Frame_t* pFrame) {
 
     int nx = pFrame->nx;
     int ny = pFrame->ny;
+    
 
     double pMin = pFrame->pressure[0];
     double pMax = pMin;
@@ -212,7 +217,7 @@ static void Render_ServeRawFrame(void) {
 
     ASSERT_COMMON_NOT_NULL(pFrame);
     draw_pressure(pFrame);
-    // draw_velocities(pFrame);
+    draw_velocities(pFrame);
     draw_grid(pFrame);
     TransForm_RawFrameYeild(pFrame);
     // LOG("One server run");
@@ -238,6 +243,7 @@ static void Render_Draw(void) {
     Render_ServeColorFrame();
 #else
     Render_ServeRawFrame();
+
 #endif
 }
 
@@ -320,7 +326,9 @@ static void* Task_Renderer(void* pvArgs) {
         if (AtomicFlag_GetStatus(&killFlag) == FLAG_SET) {
             return NULL;
         }
+        usleep(50000);
         Render_Draw();
+
 
         Render_SwapBuffers();
         Render_PollEvents();
@@ -343,7 +351,7 @@ render_err_t Render_Init(void) {
     // LOG("Renderer Init Success");
     return RENDER_SUCCESS;
 }
-
+ 
 #else
 render_err_t Render_Init(void) {
     LOG("Render Starting Up");
