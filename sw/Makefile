@@ -38,6 +38,8 @@ SRC_FILES = \
 			src/Transform/src/FrameRaw_Utils.c \
 			src/Transform/src/HelperUtils.c \
 			src/Render/src/Renderer.c	\
+			src/Render/src/Renderer_ColorFrame.c	\
+			src/Render/src/Renderer_RawFrames.c	\
 		   
 INCLUDES = \
 		   -I$(LIB_DIR)/common	\
