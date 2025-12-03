@@ -210,9 +210,9 @@ static void Render_ServeRawFrame(void) {
     }
 
     ASSERT_COMMON_NOT_NULL(pFrame);
-    draw_grid(pFrame);
     draw_pressure(pFrame);
     // draw_velocities(pFrame);
+    draw_grid(pFrame);
     TransForm_RawFrameYeild(pFrame);
     // LOG("One server run");
 }

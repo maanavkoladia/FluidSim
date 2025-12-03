@@ -45,12 +45,12 @@ static inline void CopyInArgs(void* pvArgsIn, sim_params_t* pParamsOut) {
     free(pvArgsIn);
 }
 
-void PrintCellVel(SimState_t* sim){
-    Cell_t** temp = sim->using_cells1 ? sim->cells1 : sim->cells2;
+void PrintCellVel(SimState_t* sim) {
+    Cell_t** temp = sim->CellBufs_Arr[sim->cellBufInUse];
 
     printf("Cell Horitontal Velocities\n");
-    for(int i = 0; i < sim->nx; i++){
-        for(int j = 0; j < sim->ny; j++){
+    for (int i = 0; i < sim->nx; i++) {
+        for (int j = 0; j < sim->ny; j++) {
             printf("%f ", temp[i][j].ux);
         }
         printf("\n");
@@ -69,16 +69,16 @@ static void CopyCells(Cell_t** dst, Cell_t** src, uint64_t nx, uint64_t ny) {
     }
 }
 
-static Cell_t** GetCells(SimState_t* state) {
-    if (!state) return NULL;
-
-    if (state->using_cells1) {
-        return state->cells1;
-    } else {
-        return state->cells2;
-    }
+Cell_t** GetCellsInUse(SimState_t* state) {
+    ASSERT_COMMON_NOT_NULL(state);
+    return state->CellBufs_Arr[state->cellBufInUse];
 }
 
+Cell_t** GetCellNextInUse(SimState_t* state) {
+    ASSERT_COMMON_NOT_NULL(state);
+    return state->cellBufInUse == USING_CELLS1 ? state->CellBufs_Arr[USING_CELLS2]
+                                               : state->CellBufs_Arr[USING_CELLS1];
+}
 Cell_t** CreateCellsBuffer(uint64_t nx, uint64_t ny) {
     Cell_t** return_val = NULL;
     return_val = (Cell_t**)malloc(sizeof(Cell_t*) * nx);
@@ -98,8 +98,9 @@ sim_err_t Sim_SimSnap_Yeild(SimSnap_t* pSnap) {
 }
 
 static inline sim_err_t AllocateCells(SimState_t* pSimStateBuf) {
-    pSimStateBuf->cells1 = CreateCellsBuffer(pSimStateBuf->nx, pSimStateBuf->ny);
-    pSimStateBuf->cells2 = CreateCellsBuffer(pSimStateBuf->nx, pSimStateBuf->ny);
+    FOR_LOOP_COMMON(i, NUM_OF_CELL_BUFS) {
+        pSimStateBuf->CellBufs_Arr[i] = CreateCellsBuffer(pSimStateBuf->nx, pSimStateBuf->ny);
+    }
     return SIM_SUCCESS;
 }
 
@@ -127,10 +128,11 @@ sim_err_t InsertBounds(Cell_t** init_cells, uint64_t nx, uint64_t ny) {
 
 static inline sim_err_t InitCellBoundaries(SimState_t* pSimStateBuf) {
     ASSERT_COMMON(pSimStateBuf, "PSimStatebuf is NULL");
-    ASSERT_COMMON(GetCells(pSimStateBuf), "cells are null wtf");
+    ASSERT_COMMON(GetCellsInUse(pSimStateBuf), "cells are null wtf");
     // set the bounds to 0
-    InsertBounds(pSimStateBuf->cells1, pSimStateBuf->nx, pSimStateBuf->ny);
-    InsertBounds(pSimStateBuf->cells2, pSimStateBuf->nx, pSimStateBuf->ny);
+    FOR_LOOP_COMMON(i, NUM_OF_CELL_BUFS) {
+        InsertBounds(pSimStateBuf->CellBufs_Arr[i], pSimStateBuf->nx, pSimStateBuf->ny);
+    }
     return SIM_SUCCESS;
 }
 
@@ -158,14 +160,17 @@ static inline sim_err_t InitSimState(sim_params_t* pParams, SimState_t** ppSimSt
     // Initialize remaining fields not in sim_params_t
     pSimStateBuf->totalTimeSteps = (double)pSimStateBuf->runTime.tv_sec / pSimStateBuf->dt;
     pSimStateBuf->timeStepCount = 0;
-    pSimStateBuf->cells1 = NULL;
-    pSimStateBuf->cells2 = NULL;
-    pSimStateBuf->using_cells1 = true;
-    ASSERT_COMMON_POSIX(AllocateCells(pSimStateBuf), "Failed to ALlocate the cell matrix");
+    pSimStateBuf->cellBufInUse = USING_CELLS1;
+    ASSERT_COMMON_POSIX(AllocateCells(pSimStateBuf), "Failed to A Llocate the cell matrix");
     InitCellBoundaries(pSimStateBuf);
     // allocated cells
     *ppSimStateOut = pSimStateBuf;
     return SIM_SUCCESS;
+}
+
+void Sim_State_SwapCellsInUse(SimState_t* pState) {
+    ASSERT_COMMON_NOT_NULL(pState);
+    pState->cellBufInUse = pState->cellBufInUse == USING_CELLS1 ? USING_CELLS2 : USING_CELLS1;
 }
 
 SimSnap_t* CreateSimSnap(SimState_t* state) {
@@ -173,17 +178,18 @@ SimSnap_t* CreateSimSnap(SimState_t* state) {
     res->nx = state->nx;
     res->ny = state->ny;
     res->cells = CreateCellsBuffer(res->nx, res->ny);
-    CopyCells(res->cells, GetCells(state), res->nx, res->ny);
+    CopyCells(res->cells, GetCellsInUse(state), res->nx, res->ny);
     return res;
 }
 
-void InjectVelocityRect(SimState_t* sim, uint64_t x0, uint64_t y0, // lower-left corner (inclusive)
-                        uint64_t x1, uint64_t y1,                  // upper-right corner (exclusive)
-                        double ux, double uy                       // velocity to inject
+static void InjectVelocityRect(SimState_t* sim, uint64_t x0,
+                               uint64_t y0,              // lower-left corner (inclusive)
+                               uint64_t x1, uint64_t y1, // upper-right corner (exclusive)
+                               double ux, double uy      // velocity to inject
 ) {
     if (!sim) return;
 
-    Cell_t** cells = sim->using_cells1 ? sim->cells1 : sim->cells2;
+    Cell_t** cells = GetCellsInUse(sim);
 
     // Clamp bounds to grid
     if (x1 > sim->nx) x1 = sim->nx;
@@ -198,7 +204,7 @@ void InjectVelocityRect(SimState_t* sim, uint64_t x0, uint64_t y0, // lower-left
     }
 }
 
-void InjectVelocityCenter(SimState_t* sim) {
+static void InjectVelocityCenter(SimState_t* sim) {
     uint64_t cx = sim->nx / 2;
     uint64_t cy = sim->ny / 2;
     uint64_t half_size = 2; // size = 2*half_size
@@ -214,7 +220,7 @@ static sim_err_t RunOnePassOver(SimState_t* pSimState) {
     ASSERT_COMMON_POSIX(PressureSolver(pSimState), "Something in pSolve shat itself");
 
     // run adection
-    
+
     ASSERT_COMMON_POSIX(AdvectVelocity(pSimState), "Something in pSolve shat itself");
 
     // Send SimSnap frame
@@ -227,11 +233,13 @@ static sim_err_t RunOnePassOver(SimState_t* pSimState) {
 
 static sim_err_t FreeSimState(SimState_t* pSimState) {
     ASSERT_COMMON(pSimState, "NULL Simstate when freeing");
-    FreeCells(pSimState->cells1, pSimState->nx);
-    FreeCells(pSimState->cells2, pSimState->nx);
+    FOR_LOOP_COMMON(i, NUM_OF_CELL_BUFS) {
+        FreeCells(pSimState->CellBufs_Arr[i], pSimState->nx);
+    }
     free(pSimState);
     return SIM_SUCCESS;
 }
+
 static void* Task_Controller(void* pvArgs) {
     LOG("Task_Controller Started Up");
     sim_params_t simParams;
@@ -249,9 +257,9 @@ static void* Task_Controller(void* pvArgs) {
         }
         PrintCellVel(pSimState);
         // LOG("Ran TimeStep: %lu", cycleCount);
-        ASSERT_COMMON_POSIX(RunOnePassOver(pSimState), "Failed on passover %llu", cycleCount);
+        ASSERT_COMMON_POSIX(RunOnePassOver(pSimState), "Failed on passover %lu", cycleCount);
         cycleCount++;
-        // sleep(1);
+        sleep(2);
     }
 
     // timestep,

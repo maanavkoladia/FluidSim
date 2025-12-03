@@ -1,12 +1,11 @@
 #include "Advection.h"
 #include "Assert_Common.h"
+#include "Controller.h"
 #include "ForLoop.h"
 #include "LOG.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
-
-
 
 // Clamp a value between min and max
 double clamp(double value, double minVal, double maxVal) {
@@ -43,8 +42,8 @@ double lerp(double a, double b, double t) {
 //     return new Vector2(worldX, worldY);
 // }
 
-
-double InterpolateVelocityX(SimState_t* sim_state, double world_pos_x, double world_pos_y){
+double InterpolateVelocityX(SimState_t* sim_state, double world_pos_x, double world_pos_y) {
+    ASSERT_COMMON_NOT_NULL(sim_state);
     uint64_t nx = sim_state->nx;
     uint64_t ny = sim_state->ny;
     uint64_t cell_size = sim_state->w;
@@ -53,7 +52,7 @@ double InterpolateVelocityX(SimState_t* sim_state, double world_pos_x, double wo
     uint64_t height = (ny - 1) * cell_size;
 
     double posx = ((world_pos_x + width) / 2) * cell_size;
-    double posy = ((world_pos_y + height)/ 2) * cell_size;
+    double posy = ((world_pos_y + height) / 2) * cell_size;
 
     uint64_t left = clamp(posx, 0, nx - 2);
     uint64_t bottom = clamp(posy, 0, ny - 2);
@@ -63,7 +62,7 @@ double InterpolateVelocityX(SimState_t* sim_state, double world_pos_x, double wo
     double x_fraction = clamp01(posx - left);
     double y_fraction = clamp01(posy - bottom);
 
-    Cell_t** cells = sim_state->using_cells1 ? sim_state->cells1 : sim_state->cells2;
+    Cell_t** cells = GetCellsInUse(sim_state);
 
     double top_valueX = lerp(cells[left][top].ux, cells[right][top].ux, x_fraction);
     double bottom_valueX = lerp(cells[left][bottom].ux, cells[right][bottom].ux, x_fraction);
@@ -72,7 +71,7 @@ double InterpolateVelocityX(SimState_t* sim_state, double world_pos_x, double wo
     return newX_velocity;
 }
 
-double InterpolateVelocityY(SimState_t* sim_state, double world_pos_x, double world_pos_y){
+double InterpolateVelocityY(SimState_t* sim_state, double world_pos_x, double world_pos_y) {
     uint64_t nx = sim_state->nx;
     uint64_t ny = sim_state->ny;
     uint64_t cell_size = sim_state->w;
@@ -81,7 +80,7 @@ double InterpolateVelocityY(SimState_t* sim_state, double world_pos_x, double wo
     uint64_t height = (ny - 1) * cell_size;
 
     double posx = ((world_pos_x + width) / 2) * cell_size;
-    double posy = ((world_pos_y + height)/ 2) * cell_size;
+    double posy = ((world_pos_y + height) / 2) * cell_size;
 
     uint64_t left = clamp(posx, 0, nx - 2);
     uint64_t bottom = clamp(posy, 0, ny - 2);
@@ -91,7 +90,7 @@ double InterpolateVelocityY(SimState_t* sim_state, double world_pos_x, double wo
     double x_fraction = clamp01(posx - left);
     double y_fraction = clamp01(posy - bottom);
 
-    Cell_t** cells = sim_state->using_cells1 ? sim_state->cells1 : sim_state->cells2;
+    Cell_t** cells = GetCellsInUse(sim_state);
 
     double top_valueY = lerp(cells[left][top].uy, cells[right][top].uy, x_fraction);
     double bottom_valueY = lerp(cells[left][bottom].uy, cells[right][bottom].uy, x_fraction);
@@ -100,43 +99,44 @@ double InterpolateVelocityY(SimState_t* sim_state, double world_pos_x, double wo
     return newX_velocitY;
 }
 
-
-sim_err_t AdvectVelocity(SimState_t* state){
-    double cell_width = (state->nx -1) * state->w;
+sim_err_t AdvectVelocity(SimState_t* state) {
+    double cell_width = (state->nx - 1) * state->w;
     double cell_height = (state->ny - 1) * state->w;
     double cell_size = state->w;
-    Cell_t** new_cell = state->using_cells1 ? state->cells2 : state->cells1;
+    Cell_t** new_cells = GetCellNextInUse(state);
 
-
-    for(uint64_t i = 0; i < state->nx; i++){
-        for(uint64_t j = 0; j < state->ny; j++){
-            //get world position x velocity
+    for (uint64_t i = 0; i < state->nx; i++) {
+        for (uint64_t j = 0; j < state->ny; j++) {
+            // get world position x velocity
             double horizontal_worldX = cell_width / 2 + i * cell_size;
-            double horizontal_worldY = cell_height / 2 + j * cell_size + cell_size/2;
-            //Biliner Interpol x velocity
-            double horizontal_velX = InterpolateVelocityX(state,horizontal_worldX,horizontal_worldY);
-            double horizontal_velY = InterpolateVelocityY(state,horizontal_worldX, horizontal_worldY);
+            double horizontal_worldY = cell_height / 2 + j * cell_size + cell_size / 2;
+            // Biliner Interpol x velocity
+            double horizontal_velX =
+                InterpolateVelocityX(state, horizontal_worldX, horizontal_worldY);
+            double horizontal_velY =
+                InterpolateVelocityY(state, horizontal_worldX, horizontal_worldY);
             // calculate where velociy came from
             double prev_horizontal_worldX = horizontal_worldX - horizontal_velX * state->dt;
             double prev_horizontal_worldY = horizontal_worldY - horizontal_velY * state->dt;
-            //Biliner Interpol the previous velocity as the new velocity 
-            new_cell[i][j].ux = InterpolateVelocityX(state,prev_horizontal_worldX, prev_horizontal_worldY);
+            // Biliner Interpol the previous velocity as the new velocity
+            new_cells[i][j].ux =
+                InterpolateVelocityX(state, prev_horizontal_worldX, prev_horizontal_worldY);
 
-
-            //get world position y velocity
-            double vertical_worldX = cell_width/2 + i*cell_size + cell_size/2;
-            double vertical_worldY = cell_height/2 + j*cell_size;
-            //Biliner Interpol y
-            double vertical_velX = InterpolateVelocityX(state,vertical_worldX,vertical_worldY);
-            double vertical_velY = InterpolateVelocityY(state,vertical_worldX,vertical_worldY);
+            // get world position y velocity
+            double vertical_worldX = cell_width / 2 + i * cell_size + cell_size / 2;
+            double vertical_worldY = cell_height / 2 + j * cell_size;
+            // Biliner Interpol y
+            double vertical_velX = InterpolateVelocityX(state, vertical_worldX, vertical_worldY);
+            double vertical_velY = InterpolateVelocityY(state, vertical_worldX, vertical_worldY);
             // calculate prev
             double prev_vertical_worldX = vertical_worldX - vertical_velX * state->dt;
             double prev_vertical_worldY = vertical_worldY - vertical_velY * state->dt;
-            //Biliner interpol prev velocity as new 
-            new_cell[i][j].uy = InterpolateVelocityY(state,prev_vertical_worldX, prev_vertical_worldY);            
+            // Biliner interpol prev velocity as new
+            new_cells[i][j].uy =
+                InterpolateVelocityY(state, prev_vertical_worldX, prev_vertical_worldY);
         }
     }
-        state->using_cells1 = !state->using_cells1;
+    Sim_State_SwapCellsInUse(state);
     return SIM_SUCCESS;
 }
 
@@ -161,12 +161,6 @@ sim_err_t AdvectVelocity(SimState_t* state){
 
 //     //         int prevPos = pos - vel * sim->dt;
 
-
-
-
-
-        
 //     //     }
 //     // }
 // }
-
