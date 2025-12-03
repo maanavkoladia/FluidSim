@@ -40,11 +40,19 @@ static inline bool IsSolid(Cell_t** cells, uint64_t x, uint64_t y) {
 }
 
 void printCells(Cell_t** cells, uint64_t nx, uint64_t ny) {
+    printf("Horitontal Vel: \n");
+
     FOR_LOOP_COMMON(i, nx) {
         FOR_LOOP_COMMON(j, ny) {
-            printf("Xv: %f \t", cells[i][j].ux);
-            printf("Yv: %f \t", cells[i][j].uy);
-            printf("Pressure: %f \t", cells[i][j].p);
+            printf("%f ", cells[i][j].ux);
+        }
+        printf("\n");
+    }
+
+    printf("Pressures: \n");
+    FOR_LOOP_COMMON(i, nx) {
+        FOR_LOOP_COMMON(j, ny) {
+            printf("%f ", cells[i][j].p);
         }
         printf("\n");
     }
@@ -139,13 +147,21 @@ sim_err_t PressureSolver(SimState_t* sim_state) {
     uint64_t size_x = sim_state->nx;
     uint64_t size_y = sim_state->ny;
     // LOG("Starting iteration loop");
+    printf("Cells Before pressure itteration");
+    printCells(current_cells,size_x,size_y);
     for (int i = 0; i < NUMBER_OF_PSLOVE_ITERATIONS; i++) {
-
+        
         PressureSolveIteration(sim_state, current_cells, next_cells);
+
+        
+        printf("Cells After pressure itteration");
+        printCells(next_cells,size_x,size_y);
+
         // Ping-pong: swap current and next
         Cell_t** tmp = current_cells;
         current_cells = next_cells;
         next_cells = tmp;
+        sim_state->using_cells1 = !sim_state->using_cells1;
     }
     // LOG("Ended iteration loop");
 

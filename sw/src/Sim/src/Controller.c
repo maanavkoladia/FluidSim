@@ -45,6 +45,18 @@ static inline void CopyInArgs(void* pvArgsIn, sim_params_t* pParamsOut) {
     free(pvArgsIn);
 }
 
+void PrintCellVel(SimState_t* sim){
+    Cell_t** temp = sim->using_cells1 ? sim->cells1 : sim->cells2;
+
+    printf("Cell Horitontal Velocities\n");
+    for(int i = 0; i < sim->nx; i++){
+        for(int j = 0; j < sim->ny; j++){
+            printf("%f ", temp[i][j].ux);
+        }
+        printf("\n");
+    }
+}
+
 void FreeCells(Cell_t** cells, uint64_t nx) {
     for (uint64_t i = 0; i < nx; i++)
         free(cells[i]);
@@ -193,7 +205,7 @@ void InjectVelocityCenter(SimState_t* sim) {
     uint64_t cx = sim->nx / 2;
     uint64_t cy = sim->ny / 2;
     uint64_t half_size = 2; // size = 2*half_size
-    InjectVelocityRect(sim, cx - half_size, cy - half_size, cx + half_size, cy + half_size, 3.0,
+    InjectVelocityRect(sim, cx - half_size, cy - half_size, cx + half_size, cy + half_size, 30.0,
                        0.0 // example: rightward velocity
     );
 }
@@ -205,7 +217,8 @@ static sim_err_t RunOnePassOver(SimState_t* pSimState) {
     ASSERT_COMMON_POSIX(PressureSolver(pSimState), "Something in pSolve shat itself");
 
     // run adection
-    AdvectVelocity(pSimState);
+    
+    ASSERT_COMMON_POSIX(AdvectVelocity(pSimState), "Something in pSolve shat itself");
 
     // Send SimSnap frame
     SimSnap_t* single_snap = CreateSimSnap(pSimState);
@@ -230,12 +243,14 @@ static void* Task_Controller(void* pvArgs) {
     CopyInArgs(pvArgs, &simParams);
     // Inject velocity
     ASSERT_COMMON_POSIX(InitSimState(&simParams, &pSimState), "Failed to init simState Structure");
+    PrintCellVel(pSimState);
     InjectVelocityCenter(pSimState);
     while (1) {
         if (AtomicFlag_GetStatus(&killFlag) == KILL_FLAG_SET) {
             FreeSimState(pSimState);
             return TASK_CONTROLLER_RET;
         }
+        PrintCellVel(pSimState);
         // LOG("Ran TimeStep: %lu", cycleCount);
         ASSERT_COMMON_POSIX(RunOnePassOver(pSimState), "Failed on passover %llu", cycleCount);
         cycleCount++;
