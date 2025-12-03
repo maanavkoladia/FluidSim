@@ -3,8 +3,8 @@
 #include "../../config.h"
 #include <stdint.h>
 
-#define RENDER_WINDOW_HEIGHT (480)
-#define RENDER_WINDOW_WIDTH (640)
+#define RENDER_WINDOW_HEIGHT (480 * 4)
+#define RENDER_WINDOW_WIDTH (640 * 4)
 
 #define FRAME_IN_FIFO_SIZE ((1 << 10) - 1)
 typedef enum {
