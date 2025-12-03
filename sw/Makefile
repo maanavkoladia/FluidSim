@@ -24,9 +24,7 @@ LD_FLAGS = \
 		  -lm	\
 		  -lpthread	\
 		  -lglfw \
-
-
-#		  -fsanitize=address \
+		  -fsanitize=address \
 
 SRC_FILES = \
 			src/main.c	\

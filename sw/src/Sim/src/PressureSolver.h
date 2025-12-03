@@ -4,5 +4,5 @@
 #include "SimTypes.h"
 #include <stdbool.h>
 
-sim_err_t PressureSolver(SimState_t* sim_state);
+sim_err_t RunPressureSolver(SimState_t* sim_state);
 

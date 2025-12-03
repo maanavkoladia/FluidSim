@@ -23,25 +23,6 @@
 /*            FUNCTION PROTOTYPES (DECLARATIONS)      */
 /* ================================================== */
 
-static inline double clamp_double(double v, double minVal, double maxVal) {
-    if (v < minVal) return minVal;
-    if (v > maxVal) return maxVal;
-    return v;
-}
-
-static inline int clamp_int(int v, int minVal, int maxVal) {
-    if (v < minVal) return minVal;
-    if (v > maxVal) return maxVal;
-    return v;
-}
-
-static inline double clamp01(double v) {
-    return clamp_double(v, 0.0f, 1.0f);
-}
-
-static inline double lerp(double a, double b, double t) {
-    return a + (b - a) * t;
-}
 
 typedef struct {
     double flowLeft;
@@ -78,16 +59,38 @@ int flowRight (SimState_t* g, int x, int y){
 int flowBottom (SimState_t* g, int x, int y){
     return FluidGrid_IsSolid(g, x + 0, y - 1) ? 0 : 1;
 }
-int fluidEdgeCount(SimState_t* g,int x, int y){
+
+static void FluidGrid_PreparePressureSolver(SimState_t* g) {
+    double dt = FluidGrid_TimeStep(g);
+
+    for (int x = 0; x < g->nx; x++) {
+        for (int y = 0; y < g->ny; y++) {
             int flowTop    = FluidGrid_IsSolid(g, x + 0, y + 1) ? 0 : 1;
             int flowLeft   = FluidGrid_IsSolid(g, x - 1, y + 0) ? 0 : 1;
             int flowRight  = FluidGrid_IsSolid(g, x + 1, y + 0) ? 0 : 1;
             int flowBottom = FluidGrid_IsSolid(g, x + 0, y - 1) ? 0 : 1;
-             return flowLeft + flowRight + flowTop + flowBottom;
+            int fluidEdgeCount = flowLeft + flowRight + flowTop + flowBottom;
+            bool isSolid = FluidGrid_IsSolid(g, x, y);
+            g->CellBufs_Arr[g->cellBufInUse][x][y].fluidNeighbors = fluidEdgeCount;
+            double velocityTop    = g->CellBufs_Arr[g->cellBufInUse][x + 0][y + 1].uy;
+            double velocityLeft   = g->CellBufs_Arr[g->cellBufInUse][x + 0][y + 0].ux;
+            double velocityRight  = g->CellBufs_Arr[g->cellBufInUse][x + 1][y + 0].ux;
+            double velocityBottom = g->CellBufs_Arr[g->cellBufInUse][x + 0][y + 0].uy;
+
+            double velTerm = (velocityRight - velocityLeft + velocityTop - velocityBottom) / dt;
+
+            PressureSolveData d;
+            d.flowLeft      = (double)flowLeft;
+            d.flowRight     = (double)flowRight;
+            d.flowTop       = (double)flowTop;
+            d.flowBottom    = (double)flowBottom;
+            d.isSolid       = isSolid;
+            d.flowEdgeCount = fluidEdgeCount;
+            d.velocityTerm  = velTerm;
+
+        }
+    }
 }
-
-
-
 double velTerm(SimState_t* g, int x, int y){
        
             double velocityTop    = g->CellBufs_Arr[g->cellBufInUse][x + 0][y + 1].uy;
@@ -113,7 +116,7 @@ void PressureSolve(SimState_t* g){
                 double pressureBottom = g->CellBufs_Arr[g->cellBufInUse][i][ clamp_int(j - 1, 0, g->ny - 1) ].p * flowBottom(g,i,j);
 
                 double pressureSum = pressureRight + pressureLeft + pressureTop + pressureBottom;
-                newPressure = (pressureSum - g->p_density * g->w * velTerm(g,i,j)) / fluidEdgeCount(g,i,j);
+                newPressure = (pressureSum - g->p_density * g->w * velTerm(g,i,j)) / g->CellBufs_Arr[g->cellBufInUse][i][j].fluidNeighbors;
 
             }
 
@@ -123,45 +126,11 @@ void PressureSolve(SimState_t* g){
     }
 }
 
-void FluidGrid_UpdateVelocities(SimState_t* g) {
-    double dt = g->dt;
-    double K = dt / (g->p_density * g->w);
 
-    int vxWidth  = g->nx + 1;
-    int vxHeight = g->ny;
-    int vyWidth  = g->nx;
-    int vyHeight = g->ny + 1;
-
-    // Horizontal velocities
-    for (int x = 0; x < vxWidth; x++) {
-        for (int y = 0; y < vxHeight; y++) {
-            if (FluidGrid_IsSolid(g, x, y) || FluidGrid_IsSolid(g, x - 1, y)) {
-                continue;
-            }
-            double pressureRight = FluidGrid_GetPressure(g, x,     y);
-            double pressureLeft  = FluidGrid_GetPressure(g, x - 1, y);
-            g->CellBufs_Arr[g->cellBufInUse][x][y].ux -= K * (pressureRight - pressureLeft);
-        }
-    }
-
-    // Vertical velocities
-    for (int x = 0; x < vyWidth; x++) {
-        for (int y = 0; y < vyHeight; y++) {
-            if (FluidGrid_IsSolid(g, x, y) || FluidGrid_IsSolid(g, x, y - 1)) {
-                continue;
-            }
-            double pressureTop    = FluidGrid_GetPressure(g, x, y);
-            double pressureBottom = FluidGrid_GetPressure(g, x, y - 1);
-            g->CellBufs_Arr[g->cellBufInUse][x][y].uy -= K * (pressureTop - pressureBottom);
-        }
-    }
-}
-
-sim_err_t RunPressureSolver(SimState_t* pSimState){
+void RunPressureSolver(SimState_t* pSimState){
+    FluidGrid_PreparePressureSolver(pSimState);
     int num_iter = pSimState->PSolver_Interations;
     FOR_LOOP_COMMON(i,num_iter){
         PressureSolve(pSimState);
     }
-    FluidGrid_UpdateVelocities(pSimState);
-    return SIM_SUCCESS;
 }

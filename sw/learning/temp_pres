@@ -1,0 +1,658 @@
+// fluid_grid.c
+
+#include <stdlib.h>
+#include <stdbool.h>
+#include <math.h>
+
+// ---------------------------------------------------------
+// Basic math helpers / types
+// ---------------------------------------------------------
+
+typedef struct {
+    float x;
+    float y;
+} Vector2;
+
+static inline Vector2 vec2_add(Vector2 a, Vector2 b) {
+    Vector2 r = { a.x + b.x, a.y + b.y };
+    return r;
+}
+
+static inline Vector2 vec2_sub(Vector2 a, Vector2 b) {
+    Vector2 r = { a.x - b.x, a.y - b.y };
+    return r;
+}
+
+static inline Vector2 vec2_scale(Vector2 v, float s) {
+    Vector2 r = { v.x * s, v.y * s };
+    return r;
+}
+
+static inline float clamp_float(float v, float minVal, float maxVal) {
+    if (v < minVal) return minVal;
+    if (v > maxVal) return maxVal;
+    return v;
+}
+
+static inline int clamp_int(int v, int minVal, int maxVal) {
+    if (v < minVal) return minVal;
+    if (v > maxVal) return maxVal;
+    return v;
+}
+
+static inline float clamp01(float v) {
+    return clamp_float(v, 0.0f, 1.0f);
+}
+
+static inline float lerp(float a, float b, float t) {
+    return a + (b - a) * t;
+}
+
+// ---------------------------------------------------------
+// 2D array helpers
+// ---------------------------------------------------------
+
+static float** alloc_float_2d(int width, int height) {
+    float** arr = (float**)malloc(sizeof(float*) * width);
+    if (!arr) return NULL;
+    for (int x = 0; x < width; x++) {
+        arr[x] = (float*)calloc((size_t)height, sizeof(float));
+        if (!arr[x]) {
+            // cleanup on failure
+            for (int i = 0; i < x; i++) free(arr[i]);
+            free(arr);
+            return NULL;
+        }
+    }
+    return arr;
+}
+
+static bool** alloc_bool_2d(int width, int height) {
+    bool** arr = (bool**)malloc(sizeof(bool*) * width);
+    if (!arr) return NULL;
+    for (int x = 0; x < width; x++) {
+        arr[x] = (bool*)calloc((size_t)height, sizeof(bool));
+        if (!arr[x]) {
+            for (int i = 0; i < x; i++) free(arr[i]);
+            free(arr);
+            return NULL;
+        }
+    }
+    return arr;
+}
+
+static void free_float_2d(float** arr, int width) {
+    if (!arr) return;
+    for (int x = 0; x < width; x++) {
+        free(arr[x]);
+    }
+    free(arr);
+}
+
+static void free_bool_2d(bool** arr, int width) {
+    if (!arr) return;
+    for (int x = 0; x < width; x++) {
+        free(arr[x]);
+    }
+    free(arr);
+}
+
+// ---------------------------------------------------------
+// PressureSolveData struct
+// ---------------------------------------------------------
+
+typedef struct {
+    float flowLeft;
+    float flowRight;
+    float flowTop;
+    float flowBottom;
+    int   flowEdgeCount;
+    bool  isSolid;
+    float velocityTerm;
+} PressureSolveData;
+
+// ---------------------------------------------------------
+// FluidGrid struct
+// ---------------------------------------------------------
+
+typedef struct {
+    int   CellCountX;
+    int   CellCountY;
+    float CellSize;
+
+    // Velocities on staggered grid
+    float** VelocitiesX;       // size: (CellCountX+1) x (CellCountY)
+    float** VelocitiesY;       // size: (CellCountX)   x (CellCountY+1)
+    float** VelocitiesX_Temp;  // same size as VelocitiesX
+    float** VelocitiesY_Temp;  // same size as VelocitiesY
+
+    bool**             SolidCellMap;         // size: CellCountX x CellCountY
+    PressureSolveData** PressureSolveDataMap; // size: CellCountX x CellCountY
+
+    float** PressureMap;   // size: CellCountX x CellCountY
+    float** SmokeMap;      // size: CellCountX x CellCountY
+    float** SmokeMapTemp;  // size: CellCountX x CellCountY
+
+    float TimeStepMul;
+    float SOR;
+
+    Vector2 boundsSize;
+    Vector2 bottomLeft;
+    float   halfCellSize;
+} FluidGrid;
+
+// Density is constant 1 in the C# code
+static const float Density = 1.0f;
+
+// TimeStep property: TimeStep = (1/60) * TimeStepMul
+static inline float FluidGrid_TimeStep(const FluidGrid* g) {
+    return (1.0f / 60.0f) * g->TimeStepMul;
+}
+
+// Forward declarations of methods
+static Vector2 FluidGrid_CellCentre(const FluidGrid* g, int x, int y);
+static Vector2 FluidGrid_LeftEdgeCentre(const FluidGrid* g, int x, int y);
+static Vector2 FluidGrid_BottomEdgeCentre(const FluidGrid* g, int x, int y);
+static bool    FluidGrid_IsSolid(const FluidGrid* g, int x, int y);
+static float   FluidGrid_GetPressure(const FluidGrid* g, int x, int y);
+static void    FluidGrid_PreparePressureSolver(FluidGrid* g);
+static void    FluidGrid_PressureSolve(FluidGrid* g);
+static void    FluidGrid_UpdateVelocitiesFromTemporary(FluidGrid* g);
+static Vector2 FluidGrid_GetVelocityAtWorldPos(const FluidGrid* g, Vector2 worldPos);
+
+// ---------------------------------------------------------
+// Bilinear sampling helpers
+// ---------------------------------------------------------
+
+// Equivalent to the static SampleBilinear used for Velocities
+static float FluidGrid_SampleBilinearEdges(
+    float** edgeValues,
+    int edgeCountX,
+    int edgeCountY,
+    float cellSize,
+    Vector2 worldPos)
+{
+    float width  = (float)(edgeCountX - 1) * cellSize;
+    float height = (float)(edgeCountY - 1) * cellSize;
+
+    float px = (worldPos.x + width * 0.5f) / cellSize;  // [0, countX]
+    float py = (worldPos.y + height * 0.5f) / cellSize; // [0, countY]
+
+    int left   = clamp_int((int)px, 0, edgeCountX - 2);
+    int bottom = clamp_int((int)py, 0, edgeCountY - 2);
+    int right  = left + 1;
+    int top    = bottom + 1;
+
+    float xFrac = clamp01(px - (float)left);
+    float yFrac = clamp01(py - (float)bottom);
+
+    float valueTop    = lerp(edgeValues[left][top],   edgeValues[right][top],   xFrac);
+    float valueBottom = lerp(edgeValues[left][bottom], edgeValues[right][bottom], xFrac);
+    return lerp(valueBottom, valueTop, yFrac);
+}
+
+// Approximation of Seb.Helpers.Maths.SampleBilinear(array, tx, ty, false)
+// here tx,ty are in [0,1] across the whole array.
+static float FluidGrid_SampleBilinear01(
+    float** values,
+    int width,
+    int height,
+    float tx,
+    float ty)
+{
+    tx = clamp01(tx);
+    ty = clamp01(ty);
+
+    float fx = tx * (float)(width  - 1);
+    float fy = ty * (float)(height - 1);
+
+    int x0 = (int)fx;
+    int y0 = (int)fy;
+    int x1 = x0 + 1;
+    int y1 = y0 + 1;
+
+    x1 = clamp_int(x1, 0, width  - 1);
+    y1 = clamp_int(y1, 0, height - 1);
+
+    float dx = fx - (float)x0;
+    float dy = fy - (float)y0;
+
+    float v00 = values[x0][y0];
+    float v10 = values[x1][y0];
+    float v01 = values[x0][y1];
+    float v11 = values[x1][y1];
+
+    float v0 = lerp(v00, v10, dx);
+    float v1 = lerp(v01, v11, dx);
+    return lerp(v0, v1, dy);
+}
+
+// ---------------------------------------------------------
+// Constructor / destructor
+// ---------------------------------------------------------
+
+FluidGrid* FluidGrid_Create(int cellCountX, int cellCountY, float cellSize) {
+    FluidGrid* g = (FluidGrid*)malloc(sizeof(FluidGrid));
+    if (!g) return NULL;
+
+    g->CellCountX = cellCountX;
+    g->CellCountY = cellCountY;
+    g->CellSize   = cellSize;
+    g->TimeStepMul = 1.0f;
+    g->SOR         = 1.0f;
+
+    // Allocate staggered velocity fields
+    int vxWidth  = cellCountX + 1;
+    int vxHeight = cellCountY;
+    int vyWidth  = cellCountX;
+    int vyHeight = cellCountY + 1;
+
+    g->VelocitiesX       = alloc_float_2d(vxWidth, vxHeight);
+    g->VelocitiesX_Temp  = alloc_float_2d(vxWidth, vxHeight);
+    g->VelocitiesY       = alloc_float_2d(vyWidth, vyHeight);
+    g->VelocitiesY_Temp  = alloc_float_2d(vyWidth, vyHeight);
+
+    g->PressureMap   = alloc_float_2d(cellCountX, cellCountY);
+    g->SmokeMap      = alloc_float_2d(cellCountX, cellCountY);
+    g->SmokeMapTemp  = alloc_float_2d(cellCountX, cellCountY);
+
+    g->SolidCellMap = alloc_bool_2d(cellCountX, cellCountY);
+
+    // Allocate PressureSolveDataMap as 2D
+    g->PressureSolveDataMap =
+        (PressureSolveData**)malloc(sizeof(PressureSolveData*) * cellCountX);
+    if (!g->PressureSolveDataMap) {
+        // cleanup
+        free_float_2d(g->VelocitiesX, vxWidth);
+        free_float_2d(g->VelocitiesX_Temp, vxWidth);
+        free_float_2d(g->VelocitiesY, vyWidth);
+        free_float_2d(g->VelocitiesY_Temp, vyWidth);
+        free_float_2d(g->PressureMap, cellCountX);
+        free_float_2d(g->SmokeMap, cellCountX);
+        free_float_2d(g->SmokeMapTemp, cellCountX);
+        free_bool_2d(g->SolidCellMap, cellCountX);
+        free(g);
+        return NULL;
+    }
+    for (int x = 0; x < cellCountX; x++) {
+        g->PressureSolveDataMap[x] =
+            (PressureSolveData*)calloc((size_t)cellCountY, sizeof(PressureSolveData));
+        if (!g->PressureSolveDataMap[x]) {
+            for (int i = 0; i < x; i++) free(g->PressureSolveDataMap[i]);
+            free(g->PressureSolveDataMap);
+            free_float_2d(g->VelocitiesX, vxWidth);
+            free_float_2d(g->VelocitiesX_Temp, vxWidth);
+            free_float_2d(g->VelocitiesY, vyWidth);
+            free_float_2d(g->VelocitiesY_Temp, vyWidth);
+            free_float_2d(g->PressureMap, cellCountX);
+            free_float_2d(g->SmokeMap, cellCountX);
+            free_float_2d(g->SmokeMapTemp, cellCountX);
+            free_bool_2d(g->SolidCellMap, cellCountX);
+            free(g);
+            return NULL;
+        }
+    }
+
+    // Initialize borders as solid
+    for (int x = 0; x < cellCountX; x++) {
+        g->SolidCellMap[x][0]              = true;
+        g->SolidCellMap[x][cellCountY - 1] = true;
+    }
+    for (int y = 0; y < cellCountY; y++) {
+        g->SolidCellMap[0][y]               = true;
+        g->SolidCellMap[cellCountX - 1][y]  = true;
+    }
+
+    // boundsSize = new Vector2(CellCountX, CellCountY) * CellSize;
+    g->boundsSize.x = (float)cellCountX * cellSize;
+    g->boundsSize.y = (float)cellCountY * cellSize;
+
+    // bottomLeft = -boundsSize / 2;
+    g->bottomLeft.x = -g->boundsSize.x * 0.5f;
+    g->bottomLeft.y = -g->boundsSize.y * 0.5f;
+
+    g->halfCellSize = cellSize * 0.5f;
+
+    return g;
+}
+
+void FluidGrid_Destroy(FluidGrid* g) {
+    if (!g) return;
+    int vxWidth  = g->CellCountX + 1;
+    int vyWidth  = g->CellCountX;
+
+    free_float_2d(g->VelocitiesX, vxWidth);
+    free_float_2d(g->VelocitiesX_Temp, vxWidth);
+    free_float_2d(g->VelocitiesY, vyWidth);
+    free_float_2d(g->VelocitiesY_Temp, vyWidth);
+
+    free_float_2d(g->PressureMap, g->CellCountX);
+    free_float_2d(g->SmokeMap, g->CellCountX);
+    free_float_2d(g->SmokeMapTemp, g->CellCountX);
+
+    free_bool_2d(g->SolidCellMap, g->CellCountX);
+
+    for (int x = 0; x < g->CellCountX; x++) {
+        free(g->PressureSolveDataMap[x]);
+    }
+    free(g->PressureSolveDataMap);
+
+    free(g);
+}
+
+// ---------------------------------------------------------
+// Geometry helpers
+// ---------------------------------------------------------
+
+static Vector2 FluidGrid_CellCentre(const FluidGrid* g, int x, int y) {
+    Vector2 base = g->bottomLeft;
+    Vector2 offset = { (x + 0.5f) * g->CellSize, (y + 0.5f) * g->CellSize };
+    return vec2_add(base, offset);
+}
+
+static Vector2 FluidGrid_LeftEdgeCentre(const FluidGrid* g, int x, int y) {
+    Vector2 c = FluidGrid_CellCentre(g, x, y);
+    Vector2 off = { g->halfCellSize, 0.0f };
+    return vec2_sub(c, off);
+}
+
+static Vector2 FluidGrid_BottomEdgeCentre(const FluidGrid* g, int x, int y) {
+    Vector2 c = FluidGrid_CellCentre(g, x, y);
+    Vector2 off = { 0.0f, g->halfCellSize };
+    return vec2_sub(c, off);
+}
+
+// ---------------------------------------------------------
+// IsSolid / GetPressure
+// ---------------------------------------------------------
+
+static bool FluidGrid_IsSolid(const FluidGrid* g, int x, int y) {
+    int cx = clamp_int(x, 0, g->CellCountX - 1);
+    int cy = clamp_int(y, 0, g->CellCountY - 1);
+    return g->SolidCellMap[cx][cy];
+}
+
+static float FluidGrid_GetPressure(const FluidGrid* g, int x, int y) {
+    int cx = clamp_int(x, 0, g->CellCountX - 1);
+    int cy = clamp_int(y, 0, g->CellCountY - 1);
+    return g->PressureMap[cx][cy];
+}
+
+// ---------------------------------------------------------
+// Pressure solver preparation and solve
+// ---------------------------------------------------------
+
+static void FluidGrid_PreparePressureSolver(FluidGrid* g) {
+    float dt = FluidGrid_TimeStep(g);
+
+    for (int x = 0; x < g->CellCountX; x++) {
+        for (int y = 0; y < g->CellCountY; y++) {
+            int flowTop    = FluidGrid_IsSolid(g, x + 0, y + 1) ? 0 : 1;
+            int flowLeft   = FluidGrid_IsSolid(g, x - 1, y + 0) ? 0 : 1;
+            int flowRight  = FluidGrid_IsSolid(g, x + 1, y + 0) ? 0 : 1;
+            int flowBottom = FluidGrid_IsSolid(g, x + 0, y - 1) ? 0 : 1;
+            int fluidEdgeCount = flowLeft + flowRight + flowTop + flowBottom;
+            bool isSolid = FluidGrid_IsSolid(g, x, y);
+
+            float velocityTop    = g->VelocitiesY[x + 0][y + 1];
+            float velocityLeft   = g->VelocitiesX[x + 0][y + 0];
+            float velocityRight  = g->VelocitiesX[x + 1][y + 0];
+            float velocityBottom = g->VelocitiesY[x + 0][y + 0];
+
+            float velTerm = (velocityRight - velocityLeft + velocityTop - velocityBottom) / dt;
+
+            PressureSolveData d;
+            d.flowLeft      = (float)flowLeft;
+            d.flowRight     = (float)flowRight;
+            d.flowTop       = (float)flowTop;
+            d.flowBottom    = (float)flowBottom;
+            d.isSolid       = isSolid;
+            d.flowEdgeCount = fluidEdgeCount;
+            d.velocityTerm  = velTerm;
+
+            g->PressureSolveDataMap[x][y] = d;
+        }
+    }
+}
+
+static void FluidGrid_PressureSolve(FluidGrid* g) {
+    for (int x = 0; x < g->CellCountX; x++) {
+        for (int y = 0; y < g->CellCountY; y++) {
+            float newPressure;
+            PressureSolveData info = g->PressureSolveDataMap[x][y];
+
+            if (info.isSolid || info.flowEdgeCount == 0) {
+                newPressure = 0.0f;
+            } else {
+                float pressureTop    = g->PressureMap[x][ clamp_int(y + 1, 0, g->CellCountY - 1) ] * info.flowTop;
+                float pressureLeft   = g->PressureMap[ clamp_int(x - 1, 0, g->CellCountX - 1) ][y] * info.flowLeft;
+                float pressureRight  = g->PressureMap[ clamp_int(x + 1, 0, g->CellCountX - 1) ][y] * info.flowRight;
+                float pressureBottom = g->PressureMap[x][ clamp_int(y - 1, 0, g->CellCountY - 1) ] * info.flowBottom;
+
+                float pressureSum = pressureRight + pressureLeft + pressureTop + pressureBottom;
+                newPressure = (pressureSum - Density * g->CellSize * info.velocityTerm) /
+                              (float)info.flowEdgeCount;
+            }
+
+            float oldPressure = g->PressureMap[x][y];
+            g->PressureMap[x][y] = oldPressure + (newPressure - oldPressure) * g->SOR;
+        }
+    }
+}
+
+void FluidGrid_RunPressureSolver(FluidGrid* g, int numIts) {
+    FluidGrid_PreparePressureSolver(g);
+    for (int i = 0; i < numIts; i++) {
+        FluidGrid_PressureSolve(g);
+    }
+}
+
+// ---------------------------------------------------------
+// UpdateVelocities (pressure gradient projection)
+// ---------------------------------------------------------
+
+void FluidGrid_UpdateVelocities(FluidGrid* g) {
+    float dt = FluidGrid_TimeStep(g);
+    float K = dt / (Density * g->CellSize);
+
+    int vxWidth  = g->CellCountX + 1;
+    int vxHeight = g->CellCountY;
+    int vyWidth  = g->CellCountX;
+    int vyHeight = g->CellCountY + 1;
+
+    // Horizontal velocities
+    for (int x = 0; x < vxWidth; x++) {
+        for (int y = 0; y < vxHeight; y++) {
+            if (FluidGrid_IsSolid(g, x, y) || FluidGrid_IsSolid(g, x - 1, y)) {
+                continue;
+            }
+            float pressureRight = FluidGrid_GetPressure(g, x,     y);
+            float pressureLeft  = FluidGrid_GetPressure(g, x - 1, y);
+            g->VelocitiesX[x][y] -= K * (pressureRight - pressureLeft);
+        }
+    }
+
+    // Vertical velocities
+    for (int x = 0; x < vyWidth; x++) {
+        for (int y = 0; y < vyHeight; y++) {
+            if (FluidGrid_IsSolid(g, x, y) || FluidGrid_IsSolid(g, x, y - 1)) {
+                continue;
+            }
+            float pressureTop    = FluidGrid_GetPressure(g, x, y);
+            float pressureBottom = FluidGrid_GetPressure(g, x, y - 1);
+            g->VelocitiesY[x][y] -= K * (pressureTop - pressureBottom);
+        }
+    }
+}
+
+// ---------------------------------------------------------
+// Velocity advection (semi-Lagrangian)
+// ---------------------------------------------------------
+
+static void FluidGrid_UpdateVelocitiesFromTemporary(FluidGrid* g) {
+    int vxWidth  = g->CellCountX + 1;
+    int vxHeight = g->CellCountY;
+    int vyWidth  = g->CellCountX;
+    int vyHeight = g->CellCountY + 1;
+
+    for (int x = 0; x < vxWidth; x++) {
+        for (int y = 0; y < vxHeight; y++) {
+            g->VelocitiesX[x][y] = g->VelocitiesX_Temp[x][y];
+        }
+    }
+
+    for (int x = 0; x < vyWidth; x++) {
+        for (int y = 0; y < vyHeight; y++) {
+            g->VelocitiesY[x][y] = g->VelocitiesY_Temp[x][y];
+        }
+    }
+}
+
+static Vector2 FluidGrid_GetVelocityAtWorldPos(const FluidGrid* g, Vector2 worldPos) {
+    int vxWidth  = g->CellCountX + 1;
+    int vxHeight = g->CellCountY;
+    int vyWidth  = g->CellCountX;
+    int vyHeight = g->CellCountY + 1;
+
+    float velX = FluidGrid_SampleBilinearEdges(
+        g->VelocitiesX, vxWidth, vxHeight, g->CellSize, worldPos);
+    float velY = FluidGrid_SampleBilinearEdges(
+        g->VelocitiesY, vyWidth, vyHeight, g->CellSize, worldPos);
+
+    Vector2 v = { velX, velY };
+    return v;
+}
+
+void FluidGrid_AdvectVelocity(FluidGrid* g) {
+    float dt = FluidGrid_TimeStep(g);
+
+    int vxWidth  = g->CellCountX + 1;
+    int vxHeight = g->CellCountY;
+    int vyWidth  = g->CellCountX;
+    int vyHeight = g->CellCountY + 1;
+
+    // Horizontal
+    for (int x = 0; x < vxWidth; x++) {
+        for (int y = 0; y < vxHeight; y++) {
+            if (FluidGrid_IsSolid(g, x - 1, y) || FluidGrid_IsSolid(g, x, y)) {
+                g->VelocitiesX_Temp[x][y] = g->VelocitiesX[x][y];
+                continue;
+            }
+
+            Vector2 pos    = FluidGrid_LeftEdgeCentre(g, x, y);
+            Vector2 vel    = FluidGrid_GetVelocityAtWorldPos(g, pos);
+            Vector2 posPrev = vec2_sub(pos, vec2_scale(vel, dt));
+
+            float newUX = FluidGrid_GetVelocityAtWorldPos(g, posPrev).x;
+            g->VelocitiesX_Temp[x][y] = newUX;
+        }
+    }
+
+    // Vertical
+    for (int x = 0; x < vyWidth; x++) {
+        for (int y = 0; y < vyHeight; y++) {
+            if (FluidGrid_IsSolid(g, x, y - 1) || FluidGrid_IsSolid(g, x, y)) {
+                g->VelocitiesY_Temp[x][y] = g->VelocitiesY[x][y];
+                continue;
+            }
+
+            Vector2 pos     = FluidGrid_BottomEdgeCentre(g, x, y);
+            Vector2 vel     = FluidGrid_GetVelocityAtWorldPos(g, pos);
+            Vector2 posPrev = vec2_sub(pos, vec2_scale(vel, dt));
+
+            float newUY = FluidGrid_GetVelocityAtWorldPos(g, posPrev).y;
+            g->VelocitiesY_Temp[x][y] = newUY;
+        }
+    }
+
+    FluidGrid_UpdateVelocitiesFromTemporary(g);
+}
+
+// ---------------------------------------------------------
+// Dye (smoke) advection
+// ---------------------------------------------------------
+
+void FluidGrid_AdvectDye(FluidGrid* g) {
+    float dt = FluidGrid_TimeStep(g);
+
+    int width  = g->CellCountX;
+    int height = g->CellCountY;
+
+    for (int x = 0; x < width; x++) {
+        for (int y = 0; y < height; y++) {
+            if (FluidGrid_IsSolid(g, x - 1, y) || FluidGrid_IsSolid(g, x, y)) {
+                continue;
+            }
+
+            Vector2 pos     = FluidGrid_CellCentre(g, x, y);
+            Vector2 vel     = FluidGrid_GetVelocityAtWorldPos(g, pos);
+            Vector2 posPrev = vec2_sub(pos, vec2_scale(vel, dt));
+
+            float tx = (posPrev.x - g->bottomLeft.x) / g->boundsSize.x;
+            float ty = (posPrev.y - g->bottomLeft.y) / g->boundsSize.y;
+
+            float amount = FluidGrid_SampleBilinear01(g->SmokeMap, width, height, tx, ty);
+            g->SmokeMapTemp[x][y] = amount;
+        }
+    }
+
+    // Copy back
+    for (int x = 0; x < width; x++) {
+        for (int y = 0; y < height; y++) {
+            g->SmokeMap[x][y] = g->SmokeMapTemp[x][y];
+        }
+    }
+}
+
+// ---------------------------------------------------------
+// Divergence calculation
+// ---------------------------------------------------------
+
+float FluidGrid_CalculateVelocityDivergenceAtCell(const FluidGrid* g, int cellX, int cellY) {
+    float velocityTop    = g->VelocitiesY[cellX + 0][cellY + 1];
+    float velocityLeft   = g->VelocitiesX[cellX + 0][cellY + 0];
+    float velocityRight  = g->VelocitiesX[cellX + 1][cellY + 0];
+    float velocityBottom = g->VelocitiesY[cellX + 0][cellY + 0];
+
+    float gradientX = (velocityRight - velocityLeft)   / g->CellSize;
+    float gradientY = (velocityTop   - velocityBottom) / g->CellSize;
+
+    return gradientX + gradientY;
+}
+
+// ---------------------------------------------------------
+// Clearing helpers
+// ---------------------------------------------------------
+
+void FluidGrid_ClearDye(FluidGrid* g) {
+    for (int x = 0; x < g->CellCountX; x++) {
+        for (int y = 0; y < g->CellCountY; y++) {
+            g->SmokeMap[x][y] = 0.0f;
+        }
+    }
+}
+
+void FluidGrid_ClearVelocitiesAndPressure(FluidGrid* g) {
+    int vxWidth  = g->CellCountX + 1;
+    int vxHeight = g->CellCountY;
+    int vyWidth  = g->CellCountX;
+    int vyHeight = g->CellCountY + 1;
+
+    for (int x = 0; x < vxWidth; x++) {
+        for (int y = 0; y < vxHeight; y++) {
+            g->VelocitiesX[x][y] = 0.0f;
+        }
+    }
+
+    for (int x = 0; x < vyWidth; x++) {
+        for (int y = 0; y < vyHeight; y++) {
+            g->VelocitiesY[x][y] = 0.0f;
+        }
+    }
+
+    for (int x = 0; x < g->CellCountX; x++) {
+        for (int y = 0; y < g->CellCountY; y++) {
+            g->PressureMap[x][y] = 0.0f;
+        }
+    }
+}
