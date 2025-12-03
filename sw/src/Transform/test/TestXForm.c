@@ -3,6 +3,7 @@
 #include "Assert_Common.h"
 #include "ForLoop.h"
 #include "LOG.h"
+#include <pthread.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -11,6 +12,7 @@
 #define SIM_DIM_X (10)
 #define SIM_DIM_Y (10)
 
+pthread_t test_th;
 velocity_t ux = -10;
 velocity_t uy = -10;
 
@@ -63,8 +65,9 @@ void CreateTestSnap(SimSnap_t* pSnap) {
     LOG("v Val: %f", ux);
 }
 
-void TestColors(void) {
+void* Task_TestTask(void* pvArgs) {
     LOG("Started Test");
+    sleep(2);
     while (1) {
         SimSnap_t* pSnap = NULL;
         pSnap = CreateSimSnap(SIM_DIM_X, SIM_DIM_Y);
@@ -73,13 +76,19 @@ void TestColors(void) {
         Transform_SendNewSimSnap(pSnap);
         usleep(10000);
     }
+
+    return NULL;
 }
 
 int main(void) {
     LOG("Starting XForm Test");
-    ASSERT_COMMON_POSIX(Render_Init(), "Fialed to init renderer");
     ASSERT_COMMON_POSIX(Transform_Init(), "Faield to init Xform");
-    TestColors();
+    ASSERT_COMMON_POSIX(pthread_create(&test_th, NULL, Task_TestTask, NULL),
+                        "Failed to statup to utpt eh therad");
+    ASSERT_COMMON_POSIX(Render_Init(), "Fialed to init renderer");
+#if defined(linux)
+    pthread_join(test_th, NULL);
+#endif
     ASSERT_COMMON_POSIX(Transform_Dtr(), "Failed to kill tranform service");
     LOG("Ending XForm Test");
     return EXIT_SUCCESS;
