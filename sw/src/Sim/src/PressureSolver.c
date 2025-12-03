@@ -131,12 +131,12 @@ sim_err_t PressureSolveIteration(SimState_t* sim_state, Cell_t** cells, Cell_t**
     return SIM_SUCCESS;
 }
 
-void SyncVelocities(SimState_t* state){
+void SyncVelocities(SimState_t* state) {
     Cell_t** curr = GetCellsInUse(state);
     Cell_t** next = GetCellNextInUse(state);
 
-    FOR_LOOP_COMMON(i,state->nx){
-        FOR_LOOP_COMMON(j,state->ny){
+    FOR_LOOP_COMMON(i, state->nx) {
+        FOR_LOOP_COMMON(j, state->ny) {
             next[i][j].ux = curr[i][j].ux;
             next[i][j].uy = curr[i][j].uy;
         }
@@ -145,9 +145,9 @@ void SyncVelocities(SimState_t* state){
 
 sim_err_t UpdateVelocities(Cell_t** cell_buffer, uint64_t nx, uint64_t ny, double k) {
     if (!cell_buffer) return SIM_ERR;
-    for (uint64_t x = 0; x < nx - 1 ; x++) {
+    for (uint64_t x = 0; x < nx - 1; x++) {
         for (uint64_t y = 0; y < ny - 1; y++) {
- 
+
             if (IsSolid(cell_buffer, x, y)) {
                 cell_buffer[x][y].ux = 0;
                 cell_buffer[x][y].uy = 0;
@@ -156,7 +156,7 @@ sim_err_t UpdateVelocities(Cell_t** cell_buffer, uint64_t nx, uint64_t ny, doubl
                 double pressureRight = GetPressure(cell_buffer, x + 1, y);
                 double pressureLeft = GetPressure(cell_buffer, x, y);
                 cell_buffer[x][y].ux -= k * (pressureRight - pressureLeft);
-                
+
                 double pressureTop = GetPressure(cell_buffer, x, y + 1);
                 double pressureBottom = GetPressure(cell_buffer, x, y);
                 cell_buffer[x][y].uy -= k * (pressureTop - pressureBottom);
@@ -173,18 +173,17 @@ sim_err_t PressureSolver(SimState_t* sim_state) {
     uint64_t size_x = sim_state->nx;
     uint64_t size_y = sim_state->ny;
     // LOG("Starting iteration loop");
-    //printf("Cells Before pressure itteration");
-    //printCells(GetCellsInUse(sim_state), size_x, size_y);
+    // printf("Cells Before pressure itteration");
+    // printCells(GetCellsInUse(sim_state), size_x, size_y);
     SyncVelocities(sim_state);
-    for (int i = 0; i < NUMBER_OF_PSLOVE_ITERATIONS; i++) {
+    for (uint64_t i = 0; i < sim_state->PSolver_Interations; i++) {
         PressureSolveIteration(sim_state, GetCellsInUse(sim_state), GetCellNextInUse(sim_state));
 
         // Ping-pong: swap current and next
-        //printCells(GetCellNextInUse(sim_state), size_x, size_y);
+        // printCells(GetCellNextInUse(sim_state), size_x, size_y);
         Sim_State_SwapCellsInUse(sim_state);
     }
-   // printf("Cells After pressure itteration\n");
-
+    // printf("Cells After pressure itteration\n");
 
     UpdateVelocities(GetCellsInUse(sim_state), size_x, size_y, k);
     // Update the flag so everyone else knows which buffer is active

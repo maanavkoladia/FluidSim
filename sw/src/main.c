@@ -25,7 +25,7 @@ sim_params_t simParams = {.nx = 50,
                           .p_density = 1.0,            // fluid density
                           .w = 0.1,                    // some simulation weight parameter
                           .overrelaxation_const = 1.7, // typical SOR relaxation factor
-                          .PSolver_Interations = 10,   // number of iterations for pressure solver
+                          .PSolver_Interations = 8,    // number of iterations for pressure solver
                           .runTime = {0, 0},           // initialize to 0
                           .advectionScheme = SEMI_LAGRANGIAN,
                           .PsolverScene = JACOBI};
