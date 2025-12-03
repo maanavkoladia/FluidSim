@@ -7,6 +7,7 @@
 #include "../../../mpsLibC/common/Assert_Common.h"
 #include "../../Transform/inc/Transform.h"
 // #include "../inc/Helpers.h"
+#include "../../config.h"
 #include "../inc/Renderer.h"
 #include "AtomicFlag.h"
 #include "LFfifo.h"
@@ -26,7 +27,7 @@
 static AtomicFlag_t killFlag;
 
 // static Render_Frame_t* gCurrentFrame = NULL;
-static Render_Frame_Colors_t* gCurrentFrameColors = NULL;
+// static Render_Frame_Colors_t* gCurrentFrameColors = NULL;
 
 static GLFWwindow* gWindow = NULL;
 static int gWinW = WIDTH, gWinH = HEIGHT;
@@ -167,11 +168,11 @@ static void draw_pressure(Render_Frame_t* pFrame) {
 // Color Frame
 // -----------------------------------------------------------------------------
 
-void draw_frame_colors(void) {
-    if (!gCurrentFrameColors || !gCurrentFrameColors->colors) return;
+void draw_frame_colors(Render_Frame_Colors_t* pFrame) {
+    ASSERT_COMMON_NOT_NULL(pFrame && pFrame->colors);
 
-    int width = gCurrentFrameColors->width;
-    int height = gCurrentFrameColors->height;
+    int width = pFrame->width;
+    int height = pFrame->height;
 
     glBegin(GL_QUADS);
 
@@ -179,7 +180,7 @@ void draw_frame_colors(void) {
         for (int y = 0; y < height; y++) {
 
             int idx = y * width + x;
-            Color_t* c = &gCurrentFrameColors->colors[idx];
+            Color_t* c = &pFrame->colors[idx];
             glColor3f(c->r, c->g, c->b);
 
             float x0 = -1.0f + (2.0f * x / width);
@@ -218,6 +219,17 @@ static void Render_ServeRawFrame(void) {
 }
 
 static void Render_ServeColorFrame(void) {
+    glClear(GL_COLOR_BUFFER_BIT);
+    Render_Frame_Colors_t* pFrame = NULL;
+
+    while (LF_Fifo_SpinPop(frameInFifo, &pFrame) == LF_FIFO_FAIL_TRY_POP) {
+        sched_yield();
+    }
+
+    ASSERT_COMMON_NOT_NULL(pFrame);
+    draw_frame_colors(pFrame);
+    TransForm_ColorFrameYeild(pFrame);
+    // LOG("One server run");
 }
 
 static void Render_Draw(void) {
@@ -254,6 +266,10 @@ render_err_t Render_Send_Frame_Colors(Render_Frame_Colors_t* pFrameIn) {
     // if (pFrameIn->width <= 0 || pFrameIn->height <= 0) return RENDER_FAIL;
 
     // if (gCurrentFrameColors) TransForm_ColorFrameYeild(gCurrentFrameColors);
+    while (LF_Fifo_TryPush(frameInFifo, pFrameIn) == LF_FIFO_FAIL_TRY_PUSH) {
+        sched_yield();
+    } // gCurrentFrame = pFrameIn;
+    return RENDER_SUCCESS;
 
     // gCurrentFrameColors = pFrameIn;
     return RENDER_SUCCESS;

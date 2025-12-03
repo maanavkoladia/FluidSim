@@ -248,19 +248,19 @@ static void* Task_Controller(void* pvArgs) {
     CopyInArgs(pvArgs, &simParams);
     // Inject velocity
     ASSERT_COMMON_POSIX(InitSimState(&simParams, &pSimState), "Failed to init simState Structure");
-    //PrintCellVel(pSimState);
+    // PrintCellVel(pSimState);
     InjectVelocityCenter(pSimState);
     while (1) {
         if (AtomicFlag_GetStatus(&killFlag) == KILL_FLAG_SET) {
             FreeSimState(pSimState);
             return TASK_CONTROLLER_RET;
         }
-        //PrintCellVel(pSimState);
-        // LOG("Ran TimeStep: %lu", cycleCount);
+        // PrintCellVel(pSimState);
+        //  LOG("Ran TimeStep: %lu", cycleCount);
 
         ASSERT_COMMON_POSIX(RunOnePassOver(pSimState), "Failed on passover %lu", cycleCount);
         cycleCount++;
-       // usleep(500000);
+        // usleep(500000);
     }
 
     // timestep,
