@@ -204,6 +204,18 @@ static void InjectVelocityRect(SimState_t* sim, uint64_t x0,
     }
 }
 
+void CreateSolidSquare(SimState_t* pState, uint64_t dim) {
+    ASSERT_COMMON_NOT_NULL(pState);
+    uint64_t midX = pState->nx / 2;
+    uint64_t midY = pState->ny / 2;
+    Cell_t** pCells = GetCellsInUse(pState);
+    FOR_LOOP_COMMON(i, dim) {
+        FOR_LOOP_COMMON(j, dim) {
+            pCells[i + midX][j + midY].type = SOLID;
+        }
+    }
+}
+
 static void InjectVelocityCenter(SimState_t* sim) {
     uint64_t cx = sim->nx / 2;
     uint64_t cy = sim->ny / 2;
@@ -213,6 +225,15 @@ static void InjectVelocityCenter(SimState_t* sim) {
     );
 }
 
+// asummign right is postivie
+static void InjectVelocity_LeftEdge_ToRight(SimState_t* pState, velocity_t vel) {
+    ASSERT_COMMON_NOT_NULL(pState);
+    Cell_t** pCurrCells = GetCellsInUse(pState);
+    FOR_LOOP_COMMON(i, pState->ny) {
+        pCurrCells[0][i].ux = vel;
+    }
+}
+
 static sim_err_t RunOnePassOver(SimState_t* pSimState) {
     ASSERT_COMMON(pSimState, "Got a NULL Sim State");
     // run psolver
@@ -220,14 +241,13 @@ static sim_err_t RunOnePassOver(SimState_t* pSimState) {
     ASSERT_COMMON_POSIX(RunPressureSolver(pSimState), "Something in pSolve shat itself");
 
     // run adection
-// Send SimSnap frame
+    // Send SimSnap frame
     SimSnap_t* single_snap = CreateSimSnap(pSimState);
     while (Transform_SendNewSimSnap(single_snap) != TRANSFORM_SUCCESS) {
     }
 
     ASSERT_COMMON_POSIX(AdvectVelocity(pSimState), "Something in pSolve shat itself");
 
-    
     // Sim_SimSnap_Yeild(single_snap);
     return SIM_SUCCESS;
 }
@@ -250,13 +270,14 @@ static void* Task_Controller(void* pvArgs) {
     // Inject velocity
     ASSERT_COMMON_POSIX(InitSimState(&simParams, &pSimState), "Failed to init simState Structure");
     // PrintCellVel(pSimState);
+    CreateSolidSquare(pSimState, 4);
     while (1) {
         if (AtomicFlag_GetStatus(&killFlag) == KILL_FLAG_SET) {
             FreeSimState(pSimState);
             return TASK_CONTROLLER_RET;
         }
-            InjectVelocityCenter(pSimState);
-
+        // InjectVelocityCenter(pSimState);
+        InjectVelocity_LeftEdge_ToRight(pSimState, 10);
         // PrintCellVel(pSimState);
         //  LOG("Ran TimeStep: %lu", cycleCount);
 
