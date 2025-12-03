@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #define FRAME_IN_FIFO_SIZE ((1 << 10) - 1)
+
 typedef enum {
     RENDER_SUCCESS = 0,
     RENDER_FAIL = 1,
