@@ -126,8 +126,8 @@ static double FluidGrid_SampleBilinearEdgesHorizontal(
     double width  = (double)(edgeCountX - 1) * cellSize;
     double height = (double)(edgeCountY - 1) * cellSize;
 
-    double px = (worldPos.x + width * 0.5f) / cellSize;  // [0, countX]
-    double py = (worldPos.y + height * 0.5f) / cellSize; // [0, countY]
+    double px = (worldPos.x + width * 0.5) / cellSize;  // [0, countX]
+    double py = (worldPos.y + height * 0.5) / cellSize; // [0, countY]
 
     int left   = clamp_int((int)px, 0, edgeCountX - 2);
     int bottom = clamp_int((int)py, 0, edgeCountY - 2);
@@ -143,10 +143,10 @@ static double FluidGrid_SampleBilinearEdgesHorizontal(
 }
 
 static Vector2 FluidGrid_GetVelocityAtWorldPos(const SimState_t* g, Vector2 worldPos) {
-    int vxWidth  = g->nx + 1;
+    int vxWidth  = g->nx ;
     int vxHeight = g->ny;
     int vyWidth  = g->nx;
-    int vyHeight = g->ny + 1;
+    int vyHeight = g->ny ;
 
     double velX = FluidGrid_SampleBilinearEdgesHorizontal(
         g->CellBufs_Arr[g->cellBufInUse], vxWidth, vxHeight, g->w, worldPos);

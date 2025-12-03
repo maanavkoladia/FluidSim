@@ -21,7 +21,7 @@
 
 sim_params_t simParams = {.nx = 48,
                           .ny = 48,
-                          .dt = 0.1,                  // simulation timestep in seconds
+                          .dt = 0.01,                  // simulation timestep in seconds
                           .p_density = 1.0,            // fluid density
                           .w = 0.1,                    // some simulation weight parameter
                           .overrelaxation_const = 1.7, // typical SOR relaxation factor
