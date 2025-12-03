@@ -1,26 +1,29 @@
 TARGET = main
 CC = gcc
-CFLAGS = -Wall -Wextra -g -I../../../mpsLibC/common -I/opt/homebrew/include -I../inc
-LDFLAGS = -L/opt/homebrew/lib -lglfw -framework OpenGL
+CFLAGS = -Wall -Wextra -g  -I/opt/homebrew/include -I../inc
+INC = -I../../mpsLibC/common/ -I../../mpsLibC/RingBuffer/LFfifo/
+SRC = main.c src/Renderer.c
+OBJ = $(SRC:.c=.o)
+LIB = ../../mpsLibC/build/mpsLibC.a
 
-# Set USE_COLOR_FRAME=1 to enable color frame rendering
-USE_COLOR_FRAME ?= 0
+OS_TYPE := $(shell uname -s)
 
-ifeq ($(USE_COLOR_FRAME),1)
-    CFLAGS += -DUSE_COLOR_FRAME
+ifeq ($(OS_TYPE),Darwin)
+    LDFLAGS = -framework OpenGL -lglfw
+    CFLAGS += -I/opt/homebrew/include
 endif
 
-SRC = src/main.c src/Renderer.c
-OBJ = $(SRC:.c=.o)
+ifeq ($(OS_TYPE),Linux)
+    LDFLAGS = -lGL -lglfw
+endif
 
 all: $(TARGET)
 
 $(TARGET): $(OBJ)
-	$(CC) $(OBJ) -o $@ $(LDFLAGS)
+	$(CC) $(OBJ) $(LIB) -o $@ $(LDFLAGS)
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@ $(INC)
 
 clean:
-	rm $(OBJ) $(TARGET)
-
+	rm -f $(OBJ) $(TARGET)

@@ -3,6 +3,7 @@
 #include "Controller.h"
 #include "ForLoop.h"
 #include "LOG.h"
+#include "SimTypes.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -25,7 +26,6 @@ double clamp01(double value) {
 double lerp(double a, double b, double t) {
     return a + t * (b - a);
 }
-
 
 double InterpolateVelocityX(SimState_t* sim_state, double world_pos_x, double world_pos_y) {
     ASSERT_COMMON_NOT_NULL(sim_state);
@@ -84,17 +84,45 @@ double InterpolateVelocityY(SimState_t* sim_state, double world_pos_x, double wo
     return newX_velocitY;
 }
 
+static bool IsSolid(Cell_t* pCell) {
+    ASSERT_COMMON_NOT_NULL(pCell);
+    return pCell->fluidNeighbors == SOLID;
+}
+
+static Cell_t* GetCell(SimState_t* pSimState, uint64_t x, uint64_t y) {
+    ASSERT_COMMON_NOT_NULL(pSimState);
+    ASSERT_COMMON(x < pSimState->nx, "Got invliad X");
+    ASSERT_COMMON(y < pSimState->ny, "Got invliad X");
+    Cell_t** cells = GetCellsInUse(pSimState);
+    return &cells[x][y];
+}
+
+static double GetLeftCellCenter(SimState_t* pState, uint64_t x, uint64_t y) {
+    return pState->w * (x);
+}
+
+static double GetBottomEdgeCentre(SimState_t* pState, uint64_t x, uint64_t y) {
+    return pState->w * (y);
+}
+
+static void AdvectX(SimState_t* pState) {
+}
+
 sim_err_t AdvectVelocity(SimState_t* state) {
     double cell_width = (state->nx - 1) * state->w;
     double cell_height = (state->ny - 1) * state->w;
     double cell_size = state->w;
     Cell_t** new_cells = GetCellNextInUse(state);
-
+    Cell_t** pCurrCell = GetCellsInUse(state);
     for (uint64_t i = 0; i < state->nx; i++) {
         for (uint64_t j = 0; j < state->ny; j++) {
-            // get world position x velocity
+            // if (IsSolid(GetCell(state, i, j)) || IsSolid(GetCell(state, i - 1, j))) {
+            //     new_cells[i][j] = pCurrCell[i][j];
+            // }
+            //  get world position x velocity
             double horizontal_worldX = cell_width / 2 + i * cell_size;
             double horizontal_worldY = cell_height / 2 + j * cell_size + cell_size / 2;
+
             // Biliner Interpol x velocity
             double horizontal_velX =
                 InterpolateVelocityX(state, horizontal_worldX, horizontal_worldY);

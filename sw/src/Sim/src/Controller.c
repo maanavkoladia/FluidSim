@@ -221,7 +221,7 @@ static sim_err_t RunOnePassOver(SimState_t* pSimState) {
 
     // run adection
 
-    ASSERT_COMMON_POSIX(AdvectVelocity(pSimState), "Something in pSolve shat itself");
+    // ASSERT_COMMON_POSIX(AdvectVelocity(pSimState), "Something in pSolve shat itself");
 
     // Send SimSnap frame
     SimSnap_t* single_snap = CreateSimSnap(pSimState);
@@ -260,7 +260,7 @@ static void* Task_Controller(void* pvArgs) {
 
         ASSERT_COMMON_POSIX(RunOnePassOver(pSimState), "Failed on passover %lu", cycleCount);
         cycleCount++;
-        // usleep(500000);
+        usleep(2);
     }
 
     // timestep,
