@@ -181,6 +181,44 @@ SimSnap_t* CreateSimSnap(SimState_t* state) {
     CopyCells(res->cells, GetCellsInUse(state), res->nx, res->ny);
     return res;
 }
+static void InjectVelocityCircleLeftEdge(SimState_t* sim,
+                                         uint64_t radius, // in cells
+                                         double ux)       // rightward velocity to inject
+{
+    if (!sim) return;
+
+    Cell_t** cells = GetCellsInUse(sim);
+    if (!cells) return;
+
+    uint64_t nx = sim->nx;
+    uint64_t ny = sim->ny;
+
+    if (ny == 0 || nx == 0) return;
+
+    // Center of the circle is on the left edge (x = 0), mid-height
+    double cx = 0.0;
+    double cy = (double)(ny - 1) / 2.0;
+
+    double r2 = (double)radius * (double)radius;
+
+    // Only need to scan x from 0 to radius (or nx, whichever is smaller)
+    uint64_t max_x = radius < nx ? radius : nx - 1;
+
+    for (uint64_t y = 0; y < ny; ++y) {
+        double dy = (double)y - cy;
+
+        for (uint64_t x = 0; x <= max_x; ++x) {
+            double dx = (double)x - cx;
+            double dist2 = dx * dx + dy * dy;
+
+            if (dist2 <= r2) {
+                Cell_t* c = &cells[y][x];
+                c->ux += ux; // inject rightward velocity
+                // leave uy unchanged (no vertical injection)
+            }
+        }
+    }
+}
 
 static void InjectVelocityRect(SimState_t* sim, uint64_t x0,
                                uint64_t y0,              // lower-left corner (inclusive)
@@ -277,7 +315,10 @@ static void* Task_Controller(void* pvArgs) {
             return TASK_CONTROLLER_RET;
         }
         // InjectVelocityCenter(pSimState);
-        InjectVelocity_LeftEdge_ToRight(pSimState, 10);
+        // InjectVelocity_LeftEdge_ToRight(pSimState, 10);
+        uint64_t radius = 5;                                   // tweak as needed, in cells
+        InjectVelocityCircleLeftEdge(pSimState, radius, 10.0); // strong rightward inlet
+
         // PrintCellVel(pSimState);
         //  LOG("Ran TimeStep: %lu", cycleCount);
 
