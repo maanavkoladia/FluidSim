@@ -207,9 +207,9 @@ static void InjectVelocityRect(SimState_t* sim, uint64_t x0,
 static void InjectVelocityCenter(SimState_t* sim) {
     uint64_t cx = sim->nx / 2;
     uint64_t cy = sim->ny / 2;
-    uint64_t half_size = 2; // size = 2*half_size
-    InjectVelocityRect(sim, cx - half_size, cy - half_size, cx + half_size, cy + half_size, 1.0,
-                       1.0 // example: rightward velocity
+    uint64_t half_size = 3; // size = 2*half_size
+    InjectVelocityRect(sim, cx - half_size, cy - half_size, cx + half_size, cy + half_size, 10.0,
+                       0.0 // example: rightward velocity
     );
 }
 
@@ -250,12 +250,13 @@ static void* Task_Controller(void* pvArgs) {
     // Inject velocity
     ASSERT_COMMON_POSIX(InitSimState(&simParams, &pSimState), "Failed to init simState Structure");
     // PrintCellVel(pSimState);
-    InjectVelocityCenter(pSimState);
     while (1) {
         if (AtomicFlag_GetStatus(&killFlag) == KILL_FLAG_SET) {
             FreeSimState(pSimState);
             return TASK_CONTROLLER_RET;
         }
+            InjectVelocityCenter(pSimState);
+
         // PrintCellVel(pSimState);
         //  LOG("Ran TimeStep: %lu", cycleCount);
 
