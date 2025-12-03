@@ -3,6 +3,7 @@
 #include "Controller.h"
 #include "ForLoop.h"
 #include "LOG.h"
+#include "SimTypes.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>

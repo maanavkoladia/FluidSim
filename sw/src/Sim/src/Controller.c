@@ -261,7 +261,7 @@ static void* Task_Controller(void* pvArgs) {
 
         ASSERT_COMMON_POSIX(RunOnePassOver(pSimState), "Failed on passover %lu", cycleCount);
         cycleCount++;
-        // usleep(500000);
+        usleep(2);
     }
 
     // timestep,

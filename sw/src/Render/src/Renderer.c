@@ -5,8 +5,8 @@
 #include <unistd.h>
 #define GL_SILENCE_DEPRECATION
 #include "../../../mpsLibC/common/Assert_Common.h"
-#include "../../Transform/inc/Transform.h"
-// #include "../inc/Helpers.h"
+// #include "../../Transform/inc/Transform.h"
+//  #include "../inc/Helpers.h"
 #include "../../config.h"
 #include "../inc/Renderer.h"
 #include "AtomicFlag.h"
@@ -25,6 +25,9 @@
 #define HEIGHT (RENDER_WINDOW_HEIGHT)
 
 static AtomicFlag_t killFlag;
+
+extern void TransForm_RawFrameYeild(Render_Frame_t* pFrame);
+extern void TransForm_ColorFrameYeild(Render_Frame_Colors_t* pFrame);
 
 // static Render_Frame_t* gCurrentFrame = NULL;
 // static Render_Frame_Colors_t* gCurrentFrameColors = NULL;
@@ -124,9 +127,11 @@ static void draw_pressure(Render_Frame_t* pFrame) {
     double pMin = pFrame->pressure[0];
     double pMax = pMin;
 
-    for (int i = 0; i < nx * ny; i++) {
-        if (pFrame->pressure[i] < pMin) pMin = pFrame->pressure[i];
-        if (pFrame->pressure[i] > pMax) pMax = pFrame->pressure[i];
+    /* --- Compute min/max, ignoring exact zero if you want solid walls to be black --- */
+    for (int i = 1; i < nx * ny; i++) {
+        double p = pFrame->pressure[i];
+        if (p < pMin) pMin = p;
+        if (p > pMax) pMax = p;
     }
 
     double pRange = (pMax - pMin) < 1e-10 ? 1.0 : (pMax - pMin);
@@ -138,14 +143,23 @@ static void draw_pressure(Render_Frame_t* pFrame) {
 
             int idx = j * nx + i;
             double p = pFrame->pressure[idx];
-            double t = (p - pMin) / pRange;
 
-            if (t < 0) t = 0;
-            if (t > 1) t = 1;
+            float r, g, b;
 
-            float r = (float)t;
-            float g = 0.0f;
-            float b = 1.0f - (float)t;
+            if (p == 0.0) {
+                /* --- ZERO PRESSURE → BLACK --- */
+                r = g = b = 0.0f;
+
+            } else {
+                /* --- NORMALIZED COLOR MAP (red to blue) --- */
+                double t = (p - pMin) / pRange;
+                if (t < 0) t = 0;
+                if (t > 1) t = 1;
+
+                r = (float)t;
+                g = 0.0f;
+                b = 1.0f - (float)t;
+            }
 
             glColor3f(r, g, b);
 
@@ -212,7 +226,7 @@ static void Render_ServeRawFrame(void) {
 
     ASSERT_COMMON_NOT_NULL(pFrame);
     draw_pressure(pFrame);
-    // draw_velocities(pFrame);
+    draw_velocities(pFrame);
     draw_grid(pFrame);
     TransForm_RawFrameYeild(pFrame);
     // LOG("One server run");
@@ -269,9 +283,6 @@ render_err_t Render_Send_Frame_Colors(Render_Frame_Colors_t* pFrameIn) {
     while (LF_Fifo_TryPush(frameInFifo, pFrameIn) == LF_FIFO_FAIL_TRY_PUSH) {
         sched_yield();
     } // gCurrentFrame = pFrameIn;
-    return RENDER_SUCCESS;
-
-    // gCurrentFrameColors = pFrameIn;
     return RENDER_SUCCESS;
 }
 
