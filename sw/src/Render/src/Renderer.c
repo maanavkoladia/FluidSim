@@ -210,11 +210,11 @@ static void Render_ServeRawFrame(void) {
     }
 
     ASSERT_COMMON_NOT_NULL(pFrame);
-    draw_grid(pFrame);
     draw_pressure(pFrame);
-    draw_velocities(pFrame);
+    // draw_velocities(pFrame);
+    draw_grid(pFrame);
     TransForm_RawFrameYeild(pFrame);
-    LOG("One server run");
+    // LOG("One server run");
 }
 
 static void Render_ServeColorFrame(void) {
@@ -265,7 +265,9 @@ static int Render_ShouldClose(void) {
 }
 
 static void Render_SwapBuffers(void) {
-    if (gWindow) glfwSwapBuffers(gWindow);
+    // LOG("Swap Called");
+    ASSERT_COMMON_NOT_NULL(gWindow);
+    glfwSwapBuffers(gWindow);
 }
 
 static void Render_PollEvents(void) {

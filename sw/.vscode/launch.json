@@ -1,16 +1,24 @@
 {
+    "version": "2.0.0",
     "configurations": [
         {
-            "name": "C/C++: gcc-13 build and debug active file",
+            "name": "Debug sim (use Makefile exe)",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${fileDirname}/${fileBasenameNoExtension}",
+
+            // <-- CHANGE THIS to your real executable path
+            "program": "${workspaceFolder}/FluidSim.elf",
+
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${fileDirname}",
+
+            // You can keep cwd at workspace root or wherever you want
+            "cwd": "${workspaceFolder}",
+
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",
@@ -23,9 +31,9 @@
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "C/C++: gcc-13 build active file",
-            "miDebuggerPath": "/usr/bin/gdb"
+
+            // <-- REMOVE this line so VS Code does NOT try to rebuild
+            // "preLaunchTask": "C/C++: gcc-13 build active file"
         }
-    ],
-    "version": "2.0.0"
+    ]
 }

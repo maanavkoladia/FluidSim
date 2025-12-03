@@ -11,9 +11,9 @@
 /* ================================================== */
 
 #define GRAVITY_CONST (-9.81)
-#define INITIAL_CELL_U_X (40)
-#define INITIAL_CELL_U_Y (10)
-#define INITIAL_CELL_P (10)
+#define INITIAL_CELL_U_X (0)
+#define INITIAL_CELL_U_Y (0)
+#define INITIAL_CELL_P (0)
 
 typedef enum {
     SIM_SUCCESS = 0,
