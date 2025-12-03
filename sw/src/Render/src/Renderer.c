@@ -226,7 +226,7 @@ static void Render_ServeRawFrame(void) {
 
     ASSERT_COMMON_NOT_NULL(pFrame);
     draw_pressure(pFrame);
-    // draw_velocities(pFrame);
+    draw_velocities(pFrame);
     draw_grid(pFrame);
     TransForm_RawFrameYeild(pFrame);
     // LOG("One server run");
@@ -248,11 +248,11 @@ static void Render_ServeColorFrame(void) {
 
 static void Render_Draw(void) {
 
-#ifdef DISPLAY_COLORS
+    // #ifdef DISPLAY_COLORS
     Render_ServeColorFrame();
-#else
-    Render_ServeRawFrame();
-#endif
+    // #else
+    // Render_ServeRawFrame();
+    // #endif
 }
 
 // -----------------------------------------------------------------------------
@@ -283,9 +283,6 @@ render_err_t Render_Send_Frame_Colors(Render_Frame_Colors_t* pFrameIn) {
     while (LF_Fifo_TryPush(frameInFifo, pFrameIn) == LF_FIFO_FAIL_TRY_PUSH) {
         sched_yield();
     } // gCurrentFrame = pFrameIn;
-    return RENDER_SUCCESS;
-
-    // gCurrentFrameColors = pFrameIn;
     return RENDER_SUCCESS;
 }
 
