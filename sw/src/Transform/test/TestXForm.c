@@ -16,7 +16,7 @@ pthread_t test_th;
 velocity_t ux = -10;
 velocity_t uy = -10;
 
-#define V_GROWTH (.01)
+#define V_GROWTH (.05)
 
 static Cell_t** CreateCellsBuffer(uint64_t nx, uint64_t ny) {
     Cell_t** return_val = NULL;
@@ -74,7 +74,7 @@ void* Task_TestTask(void* pvArgs) {
         ASSERT_COMMON_NOT_NULL(pSnap);
         CreateTestSnap(pSnap);
         Transform_SendNewSimSnap(pSnap);
-        usleep(10000);
+        usleep(16000);
     }
 
     return NULL;

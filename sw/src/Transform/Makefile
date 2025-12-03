@@ -19,7 +19,7 @@ LD_FLAGS = \
 	-lm \
 	-lpthread \
 	-lglfw	\
-	-lGL
+	
 
 SRC_FILES = \
 	src/Transform.c \
@@ -41,6 +41,10 @@ LD_FLAGS += \
 
 C_FLAGS += \
 	-I/opt/homebrew/include
+endif
+
+ifeq ($(OS_TYPE),Linux)
+LD_FLAGS += -lGL
 endif
 
 .PHONY: all clean

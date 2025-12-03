@@ -122,14 +122,42 @@ static inline double InterpolateUY(SimSnap_t* pSnap, uint64_t fx, uint64_t fy,
 
 static Color_t VelocityColor(double ux, double uy) {
     float speed = sqrtf(ux * ux + uy * uy);
-    float t = fminf(speed * 0.1f, 1.0f); // scale mapping
-
-    Color_t c;
-    c.r = t; // more speed → more red
-    c.g = 0.2f;
-    c.b = 1.0f - t;
-    c.a = 1.0f;
-    return c;
+    float t = fminf(speed * 0.1f, 1.0f); // Normalize speed: 0 = low, 1 = high
+    
+    // Map speed to hue: 0 (red) → 300 (purple) spanning the spectrum
+    // Red=0°, Orange=30°, Yellow=60°, Green=120°, Cyan=180°, Blue=240°, Purple=300°
+    float hue = t * 300.0f; // 0 to 300 degrees
+    float saturation = 1.0f; // Full saturation for vibrant colors
+    float value = 1.0f; // Full brightness
+    
+    // Convert HSV to RGB
+    float c = value * saturation;
+    float x = c * (1.0f - fabsf(fmodf(hue / 60.0f, 2.0f) - 1.0f));
+    float m = value - c;
+    
+    float r, g, b;
+    
+    if (hue < 60.0f) {
+        r = c; g = x; b = 0.0f;
+    } else if (hue < 120.0f) {
+        r = x; g = c; b = 0.0f;
+    } else if (hue < 180.0f) {
+        r = 0.0f; g = c; b = x;
+    } else if (hue < 240.0f) {
+        r = 0.0f; g = x; b = c;
+    } else if (hue < 300.0f) {
+        r = x; g = 0.0f; b = c;
+    } else {
+        r = c; g = 0.0f; b = c; // Purple (magenta)
+    }
+    
+    Color_t color;
+    color.r = r + m;
+    color.g = g + m;
+    color.b = b + m;
+    color.a = 1.0f;
+    
+    return color;
 }
 
 transform_err_t Snap2ColorFrame(SimSnap_t* pSnap, Render_Frame_Colors_t* pFrame) {
