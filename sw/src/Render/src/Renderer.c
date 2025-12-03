@@ -248,11 +248,11 @@ static void Render_ServeColorFrame(void) {
 
 static void Render_Draw(void) {
 
-    // #ifdef DISPLAY_COLORS
+#ifdef DISPLAY_COLORS
     Render_ServeColorFrame();
-    // #else
-    // Render_ServeRawFrame();
-    // #endif
+#else
+    Render_ServeRawFrame();
+#endif
 }
 
 // -----------------------------------------------------------------------------
