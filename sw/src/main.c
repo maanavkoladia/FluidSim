@@ -35,8 +35,10 @@ int main(int argc, char** argv) {
     (void)argv;
     LOG("Fluid Sim Starting Up");
 
-#ifdef RUN_RENDERER
+#if defined(linux)
+#    ifdef RUN_RENDERER
     ASSERT_COMMON_POSIX(Render_Init(), "Failed to launch render service");
+#    endif
 #endif
 
     // needs to be inited firt, bc sim needs to push into the transform fifo, ie sim depedns on
@@ -51,6 +53,9 @@ int main(int argc, char** argv) {
 #endif
 
 #if defined(__APPLE__)
+#    ifdef RUN_RENDERER
+    Render_Init();
+#    endif
 #else
     FOR_LOOP_COMMON(i, SIM_RUNTIME_S) {
         sleep(1);
