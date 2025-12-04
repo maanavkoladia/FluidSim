@@ -2,13 +2,12 @@ PROJECT = FluidSim
 BUILD_DIR = build
 TARGET = $(PROJECT).elf
 
+
+
 CC = gcc
 
 LIB_DIR = mpsLibC
 LIB = $(LIB_DIR)/build/$(LIB_DIR).a 
-
-
-
 
 OS_TYPE := $(shell uname -s)
 
@@ -41,15 +40,16 @@ SRC_FILES = \
 			src/Render/src/Renderer_ColorFrame.c	\
 			src/Render/src/Renderer_RawFrames.c	\
 			src/Render/src/Renderer_Display.c	\
-		   
+			src/Render/src/Renderer_ColorFrame_OS.c	\
+
 INCLUDES = \
 		   -I$(LIB_DIR)/common	\
 		   -I$(LIB_DIR)/RingBuffer/PFifo	\
 		   -I$(LIB_DIR)/RingBuffer/LFfifo	\
 
+
 HDR_FILES = \
 		   src/config.h
-
 
 ifeq ($(OS_TYPE),Darwin)
 LD_FLAGS += \

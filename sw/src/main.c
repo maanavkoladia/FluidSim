@@ -19,13 +19,13 @@
 
 #define SIM_RUNTIME_S (60)
 
-sim_params_t simParams = {.nx = 64 * 3,
+sim_params_t simParams = {.nx = 48 * 3,
                           .ny = 48 * 3,
                           .dt = 0.01,                  // simulation timestep in seconds
                           .p_density = 1.0,            // fluid density
-                          .w = 0.02,                    // some simulation weight parameter
+                          .w = 0.015,                  // some simulation weight parameter
                           .overrelaxation_const = 1.8, // typical SOR relaxation factor
-                          .PSolver_Interations = 30,    // number of iterations for pressure solver
+                          .PSolver_Interations = 30,   // number of iterations for pressure solver
                           .runTime = {0, 0},           // initialize to 0
                           .advectionScheme = SEMI_LAGRANGIAN,
                           .PsolverScene = JACOBI};
@@ -57,10 +57,10 @@ int main(int argc, char** argv) {
     Render_Init();
 #    endif
 #else
-    FOR_LOOP_COMMON(i, SIM_RUNTIME_S) {
-        sleep(1);
-        LOG("Slept for %d sec", i);
-    }
+    // FOR_LOOP_COMMON(i, SIM_RUNTIME_S) {
+    sleep(SIM_RUNTIME_S);
+    // LOG("Slept for %d sec", i);
+    //}
 #endif
 
     LOG("Beggning tear down");

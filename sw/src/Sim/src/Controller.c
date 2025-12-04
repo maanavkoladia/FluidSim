@@ -182,9 +182,9 @@ SimSnap_t* CreateSimSnap(SimState_t* state) {
     return res;
 }
 static void InjectVelocityCircleLeftEdge(SimState_t* sim,
-                                         uint64_t radius,   // in cells
-                                         uint64_t offset,   // cells from left edge
-                                         double ux)         // rightward velocity
+                                         uint64_t radius, // in cells
+                                         uint64_t offset, // cells from left edge
+                                         double ux)       // rightward velocity
 {
     if (!sim) return;
 
@@ -204,7 +204,7 @@ static void InjectVelocityCircleLeftEdge(SimState_t* sim,
 
     // Scan only bounding box needed for circle
     uint64_t start_x = (offset > radius) ? (offset - radius) : 0;
-    uint64_t end_x   = offset + radius < nx ? offset + radius : nx - 1;
+    uint64_t end_x = offset + radius < nx ? offset + radius : nx - 1;
 
     for (uint64_t y = 0; y < ny; ++y) {
         double dy = (double)y - cy;
@@ -214,12 +214,11 @@ static void InjectVelocityCircleLeftEdge(SimState_t* sim,
 
             if (dx * dx + dy * dy <= r2) {
                 Cell_t* c = &cells[x][y];
-                c->ux += ux;  // inject rightward velocity
+                c->ux += ux; // inject rightward velocity
             }
         }
     }
 }
-
 
 static void InjectVelocityRect(SimState_t* sim, uint64_t x0,
                                uint64_t y0,              // lower-left corner (inclusive)
@@ -258,8 +257,7 @@ void CreateSolidSquare(SimState_t* pState, uint64_t dim) {
     }
 }
 
-void CreateSolidCircle(SimState_t* pState, uint64_t radius)
-{
+void CreateSolidCircle(SimState_t* pState, uint64_t radius) {
     ASSERT_COMMON_NOT_NULL(pState);
 
     uint64_t midX = pState->nx / 2;
@@ -278,21 +276,18 @@ void CreateSolidCircle(SimState_t* pState, uint64_t radius)
                 int64_t y = (int64_t)midY + dy;
 
                 // Bounds check (important near edges)
-                if (x < 0 || y < 0 ||
-                    x >= (int64_t)pState->nx ||
-                    y >= (int64_t)pState->ny) {
+                if (x < 0 || y < 0 || x >= (int64_t)pState->nx || y >= (int64_t)pState->ny) {
                     continue;
                 }
 
                 pCells[x][y].type = SOLID;
-                pCells[x][y].ux   = 0.0;
-                pCells[x][y].uy   = 0.0;
-                pCells[x][y].p    = 0.0;
+                pCells[x][y].ux = 0.0;
+                pCells[x][y].uy = 0.0;
+                pCells[x][y].p = 0.0;
             }
         }
     }
 }
-
 
 static void InjectVelocityCenter(SimState_t* sim) {
     uint64_t cx = sim->nx / 2;
@@ -348,17 +343,17 @@ static void* Task_Controller(void* pvArgs) {
     // Inject velocity
     ASSERT_COMMON_POSIX(InitSimState(&simParams, &pSimState), "Failed to init simState Structure");
     // PrintCellVel(pSimState);
-    //CreateSolidSquare(pSimState, 4);
-    CreateSolidCircle(pSimState,8);
+    // CreateSolidSquare(pSimState, 4);
+    // CreateSolidCircle(pSimState,8);
     while (1) {
         if (AtomicFlag_GetStatus(&killFlag) == KILL_FLAG_SET) {
             FreeSimState(pSimState);
             return TASK_CONTROLLER_RET;
         }
-        //InjectVelocityCenter(pSimState);
-         //InjectVelocity_LeftEdge_ToRight(pSimState, 1);
-        uint64_t radius = 15;                                   // tweak as needed, in cells
-        InjectVelocityCircleLeftEdge(pSimState, radius, 7,1.0); // strong rightward inlet
+        // InjectVelocityCenter(pSimState);
+        // InjectVelocity_LeftEdge_ToRight(pSimState, 1);
+        uint64_t radius = 15;                                    // tweak as needed, in cells
+        InjectVelocityCircleLeftEdge(pSimState, radius, 7, 1.0); // strong rightward inlet
 
         // PrintCellVel(pSimState);
         //  LOG("Ran TimeStep: %lu", cycleCount);
