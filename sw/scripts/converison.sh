@@ -4,9 +4,11 @@
 
 DIR=$1
 FILEOUT=${2:-output.mp4}
-WIDTH=${3:-480}
-HEIGHT=${4:-480}
-FPS=${5:-100}   # optional framerate
+WIDTH=${3:-1920}
+HEIGHT=${4:-1080}
+FPS=${5:-60}   # optional framerate
+
+scp -r frontera:/home1/11172/maanavkoladia/projects/FluidSim/sw/frames .
 
 if [ -z "$DIR" ]; then
     echo "Usage: $0 <frame_dir> [width height framerate]"
