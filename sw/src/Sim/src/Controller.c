@@ -14,7 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
+#include <assert.h>
 #define TASK_CONTROLLER_RET (NULL)
 
 typedef struct {
@@ -35,6 +35,12 @@ AtomicFlag_t killFlag;
     } while (0)
 
 void FreeCells(Cell_t** cells, uint64_t nx);
+
+
+
+static inline uint64_t FLAT_IDX(uint64_t x, uint64_t y, uint64_t nx) {
+    return y * nx + x;
+}
 
 // will free mem
 static inline void CopyInArgs(void* pvArgsIn, sim_params_t* pParamsOut) {
@@ -86,6 +92,59 @@ Cell_t** CreateCellsBuffer(uint64_t nx, uint64_t ny) {
         return_val[i] = malloc(sizeof(Cell_t) * ny);
     }
     return return_val;
+}
+double* FlattenUX(Cell_t** cells, uint64_t nx, uint64_t ny) {
+    assert(cells);
+
+    double* ux = (double*)malloc(sizeof(double) * nx * ny);
+    assert(ux);
+
+    for (uint64_t y = 0; y < ny; y++) {
+        for (uint64_t x = 0; x < nx; x++) {
+            ux[FLAT_IDX(x, y, nx)] = cells[x][y].ux;
+        }
+    }
+    return ux;
+}
+double* FlattenUY(Cell_t** cells, uint64_t nx, uint64_t ny) {
+    assert(cells);
+
+    double* uy = (double*)malloc(sizeof(double) * nx * ny);
+    assert(uy);
+
+    for (uint64_t y = 0; y < ny; y++) {
+        for (uint64_t x = 0; x < nx; x++) {
+            uy[FLAT_IDX(x, y, nx)] = cells[x][y].uy;
+        }
+    }
+    return uy;
+}
+double* FlattenPressure(Cell_t** cells, uint64_t nx, uint64_t ny) {
+    assert(cells);
+
+    double* p = (double*)malloc(sizeof(double) * nx * ny);
+    assert(p);
+
+    for (uint64_t y = 0; y < ny; y++) {
+        for (uint64_t x = 0; x < nx; x++) {
+            p[FLAT_IDX(x, y, nx)] = cells[x][y].p;
+        }
+    }
+    return p;
+}
+CellMaterial_t* FlattenType(Cell_t** cells, uint64_t nx, uint64_t ny) {
+    assert(cells);
+
+    CellMaterial_t* type =
+        (CellMaterial_t*)malloc(sizeof(CellMaterial_t) * nx * ny);
+    assert(type);
+
+    for (uint64_t y = 0; y < ny; y++) {
+        for (uint64_t x = 0; x < nx; x++) {
+            type[FLAT_IDX(x, y, nx)] = cells[x][y].type;
+        }
+    }
+    return type;
 }
 
 sim_err_t Sim_SimSnap_Yeild(SimSnap_t* pSnap) {
@@ -181,10 +240,14 @@ SimSnap_t* CreateSimSnap(SimState_t* state) {
     CopyCells(res->cells, GetCellsInUse(state), res->nx, res->ny);
     return res;
 }
+
+
+#include <math.h>
+
 static void InjectVelocityCircleLeftEdge(SimState_t* sim,
-                                         uint64_t radius, // in cells
-                                         uint64_t offset, // cells from left edge
-                                         double ux)       // rightward velocity
+                                         uint64_t radius,   // in cells
+                                         uint64_t offset,   // cells from left edge
+                                         double ux)         // max rightward velocity
 {
     if (!sim) return;
 
@@ -193,29 +256,60 @@ static void InjectVelocityCircleLeftEdge(SimState_t* sim,
 
     uint64_t nx = sim->nx;
     uint64_t ny = sim->ny;
-
     if (nx == 0 || ny == 0) return;
 
-    // Center of the circle offset from the left edge
     double cx = (double)offset;
     double cy = (double)(ny - 1) * 0.5;
 
-    double r2 = (double)radius * (double)radius;
+    double r      = (double)radius;
 
-    // Scan only bounding box needed for circle
+    // Inner radius: full velocity
+    // Outer radius: fully faded to 0
+    double r_inner = 0.6 * r;   // tweak 0.5–0.8 to taste
+    double r_outer = r;
+
+    double r_outer2 = r_outer * r_outer;
+
     uint64_t start_x = (offset > radius) ? (offset - radius) : 0;
-    uint64_t end_x = offset + radius < nx ? offset + radius : nx - 1;
+    uint64_t end_x   = (offset + radius < nx) ? (offset + radius) : nx - 1;
 
     for (uint64_t y = 0; y < ny; ++y) {
         double dy = (double)y - cy;
 
         for (uint64_t x = start_x; x <= end_x; ++x) {
             double dx = (double)x - cx;
+            double dist2 = dx * dx + dy * dy;
 
-            if (dx * dx + dy * dy <= r2) {
-                Cell_t* c = &cells[x][y];
-                c->ux += ux; // inject rightward velocity
+            // Outside the outer radius: zero injection
+            if (dist2 > r_outer2) {
+                continue;
             }
+
+            double dist = sqrt(dist2);
+            double weight;
+
+            if (dist <= r_inner) {
+                // Flat core: full strength
+                weight = 1.0;
+            } else {
+                // Smooth falloff from r_inner to r_outer
+                double t = (dist - r_inner) / (r_outer - r_inner); // 0..1
+                if (t < 0.0) t = 0.0;
+                if (t > 1.0) t = 1.0;
+
+                // "smootherstep": 6t^5 - 15t^4 + 10t^3 (C^2 continuous)
+                double t2 = t * t;
+                double t3 = t2 * t;
+                double smoother = 6.0 * t3 * t2 - 15.0 * t2 * t2 + 10.0 * t3;
+
+                // 1 at inner radius, 0 at outer radius
+                weight = 1.0 - smoother;
+            }
+
+            if (weight <= 0.0) continue;
+
+            Cell_t* c = &cells[x][y];
+            c->ux += ux * weight;
         }
     }
 }
@@ -350,10 +444,10 @@ static void* Task_Controller(void* pvArgs) {
             FreeSimState(pSimState);
             return TASK_CONTROLLER_RET;
         }
-        // InjectVelocityCenter(pSimState);
-        // InjectVelocity_LeftEdge_ToRight(pSimState, 1);
-        uint64_t radius = 15;                                    // tweak as needed, in cells
-        InjectVelocityCircleLeftEdge(pSimState, radius, 7, 1.0); // strong rightward inlet
+        //InjectVelocityCenter(pSimState);
+         //InjectVelocity_LeftEdge_ToRight(pSimState, 1);
+        uint64_t radius = 10;                                   // tweak as needed, in cells
+        InjectVelocityCircleLeftEdge(pSimState, radius, 7,1.0); // strong rightward inlet
 
         // PrintCellVel(pSimState);
         //  LOG("Ran TimeStep: %lu", cycleCount);
