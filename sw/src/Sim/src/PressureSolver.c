@@ -23,7 +23,7 @@
 /*            FUNCTION PROTOTYPES (DECLARATIONS)      */
 /* ================================================== */
 
-static inline double clamp_double(double v, double minVal, double maxVal) {
+static inline float clamp_float(float v, float minVal, float maxVal) {
     if (v < minVal) return minVal;
     if (v > maxVal) return maxVal;
     return v;
@@ -35,22 +35,22 @@ static inline int clamp_int(int v, int minVal, int maxVal) {
     return v;
 }
 
-static inline double clamp01(double v) {
-    return clamp_double(v, 0.0f, 1.0f);
+static inline float clamp01(float v) {
+    return clamp_float(v, 0.0f, 1.0f);
 }
 
-static inline double lerp(double a, double b, double t) {
+static inline float lerp(float a, float b, float t) {
     return a + (b - a) * t;
 }
 
 typedef struct {
-    double flowLeft;
-    double flowRight;
-    double flowTop;
-    double flowBottom;
+    float flowLeft;
+    float flowRight;
+    float flowTop;
+    float flowBottom;
     int   flowEdgeCount;
     bool  isSolid;
-    double velocityTerm;
+    float velocityTerm;
 } PressureSolveData;
 
 static bool FluidGrid_IsSolid(const SimState_t* g, int x, int y) {
@@ -59,7 +59,7 @@ static bool FluidGrid_IsSolid(const SimState_t* g, int x, int y) {
     return g->CellBufs_Arr[g->cellBufInUse][cx][cy].type == SOLID;
 }
 
-static double FluidGrid_GetPressure(const SimState_t* g, int x, int y) {
+static float FluidGrid_GetPressure(const SimState_t* g, int x, int y) {
     int cx = clamp_int(x, 0, g->nx - 1);
     int cy = clamp_int(y, 0, g->ny - 1);
     return g->CellBufs_Arr[g->cellBufInUse][cx][cy].p;
@@ -88,12 +88,12 @@ int fluidEdgeCount(SimState_t* g,int x, int y){
 
 
 
-double velTerm(SimState_t* g, int x, int y){
+float velTerm(SimState_t* g, int x, int y){
        
-            double velocityTop    = g->CellBufs_Arr[g->cellBufInUse][x + 0][y + 1].uy;
-            double velocityLeft   = g->CellBufs_Arr[g->cellBufInUse][x + 0][y + 0].ux;
-            double velocityRight  = g->CellBufs_Arr[g->cellBufInUse][x + 1][y + 0].ux;
-            double velocityBottom = g->CellBufs_Arr[g->cellBufInUse][x + 0][y + 0].uy;
+            float velocityTop    = g->CellBufs_Arr[g->cellBufInUse][x + 0][y + 1].uy;
+            float velocityLeft   = g->CellBufs_Arr[g->cellBufInUse][x + 0][y + 0].ux;
+            float velocityRight  = g->CellBufs_Arr[g->cellBufInUse][x + 1][y + 0].ux;
+            float velocityBottom = g->CellBufs_Arr[g->cellBufInUse][x + 0][y + 0].uy;
 
             return (velocityRight - velocityLeft + velocityTop - velocityBottom) / g->dt;
 }
@@ -130,20 +130,20 @@ void PressureSolve(SimState_t* g){
     #pragma omp parallel for 
     FOR_LOOP_COMMON(i,nx){
         FOR_LOOP_COMMON(j,ny){
-            double newPressure;
+            float newPressure;
             if((FluidGrid_IsSolid(g,i,j)) || (fluidEdgeCount(g,i,j) == 0)){
                 newPressure = 0;
             }else{
-                double pressureTop    = current[i][ clamp_int(j + 1, 0, g->ny - 1) ].p * flowTop(g,i,j);
-                double pressureLeft   = current[ clamp_int(i - 1, 0, g->nx - 1) ][j].p * flowLeft(g,i,j);
-                double pressureRight  = current[ clamp_int(i + 1, 0, g->nx - 1) ][j].p * flowRight(g,i,j);
-                double pressureBottom = current[i][ clamp_int(j - 1, 0, g->ny - 1) ].p * flowBottom(g,i,j);
+                float pressureTop    = current[i][ clamp_int(j + 1, 0, g->ny - 1) ].p * flowTop(g,i,j);
+                float pressureLeft   = current[ clamp_int(i - 1, 0, g->nx - 1) ][j].p * flowLeft(g,i,j);
+                float pressureRight  = current[ clamp_int(i + 1, 0, g->nx - 1) ][j].p * flowRight(g,i,j);
+                float pressureBottom = current[i][ clamp_int(j - 1, 0, g->ny - 1) ].p * flowBottom(g,i,j);
 
-                double pressureSum = pressureRight + pressureLeft + pressureTop + pressureBottom;
+                float pressureSum = pressureRight + pressureLeft + pressureTop + pressureBottom;
                 newPressure = (pressureSum - g->p_density * g->w * velTerm(g,i,j)) / fluidEdgeCount(g,i,j);
 
             }
-            double oldPressure = current[i][j].p;
+            float oldPressure = current[i][j].p;
             next_cells[i][j].p = oldPressure + (newPressure - oldPressure) * g->overrelaxation_const;
             
         }
@@ -152,8 +152,8 @@ void PressureSolve(SimState_t* g){
 }
 
 void FluidGrid_UpdateVelocities(SimState_t* g) {
-    double dt = g->dt;
-    double K = dt / (g->p_density * g->w);
+    float dt = g->dt;
+    float K = dt / (g->p_density * g->w);
 
     int vxWidth  = g->nx;
     int vxHeight = g->ny;
@@ -169,8 +169,8 @@ void FluidGrid_UpdateVelocities(SimState_t* g) {
                 g->CellBufs_Arr[g->cellBufInUse][x][y].ux = 0; //FORCE vel 0
                 continue;
             }
-            double pressureRight = FluidGrid_GetPressure(g, x,     y);
-            double pressureLeft  = FluidGrid_GetPressure(g, x - 1, y);
+            float pressureRight = FluidGrid_GetPressure(g, x,     y);
+            float pressureLeft  = FluidGrid_GetPressure(g, x - 1, y);
             g->CellBufs_Arr[g->cellBufInUse][x][y].ux -= K * (pressureRight - pressureLeft);
         }
     }
@@ -182,8 +182,8 @@ void FluidGrid_UpdateVelocities(SimState_t* g) {
                 g->CellBufs_Arr[g->cellBufInUse][x][y].uy = 0; //FORCE vel 0
                 continue;
             }
-            double pressureTop    = FluidGrid_GetPressure(g, x, y);
-            double pressureBottom = FluidGrid_GetPressure(g, x, y - 1);
+            float pressureTop    = FluidGrid_GetPressure(g, x, y);
+            float pressureBottom = FluidGrid_GetPressure(g, x, y - 1);
             g->CellBufs_Arr[g->cellBufInUse][x][y].uy -= K * (pressureTop - pressureBottom);
         }
     }
