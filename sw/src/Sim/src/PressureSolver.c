@@ -103,10 +103,10 @@ void PressureSolve(SimState_t* g){
     FOR_LOOP_COMMON(i,g->nx){
         FOR_LOOP_COMMON(j,g->ny){
             double newPressure;
-            if((g->CellBufs_Arr[g->cellBufInUse][i][j].type == SOLID) || (g->CellBufs_Arr[g->cellBufInUse][i][j].fluidNeighbors == 0)){
+            if((FluidGrid_IsSolid(g,i,j)) || (fluidEdgeCount(g,i,j) == 0)){
                 newPressure = 0;
             }else{
-                double pressureTop    = g->CellBufs_Arr[g->cellBufInUse][i][ clamp_int(j + 1, 0, g->ny - 1) ].p * flowBottom(g,i,j);
+                double pressureTop    = g->CellBufs_Arr[g->cellBufInUse][i][ clamp_int(j + 1, 0, g->ny - 1) ].p * flowTop(g,i,j);
                 double pressureLeft   = g->CellBufs_Arr[g->cellBufInUse][ clamp_int(i - 1, 0, g->nx - 1) ][j].p * flowLeft(g,i,j);
                 double pressureRight  = g->CellBufs_Arr[g->cellBufInUse][ clamp_int(i + 1, 0, g->nx - 1) ][j].p * flowRight(g,i,j);
                 double pressureBottom = g->CellBufs_Arr[g->cellBufInUse][i][ clamp_int(j - 1, 0, g->ny - 1) ].p * flowBottom(g,i,j);
@@ -126,15 +126,16 @@ void FluidGrid_UpdateVelocities(SimState_t* g) {
     double dt = g->dt;
     double K = dt / (g->p_density * g->w);
 
-    int vxWidth  = g->nx + 1;
+    int vxWidth  = g->nx;
     int vxHeight = g->ny;
     int vyWidth  = g->nx;
-    int vyHeight = g->ny + 1;
+    int vyHeight = g->ny;
 
     // Horizontal velocities
     for (int x = 0; x < vxWidth; x++) {
         for (int y = 0; y < vxHeight; y++) {
             if (FluidGrid_IsSolid(g, x, y) || FluidGrid_IsSolid(g, x - 1, y)) {
+                g->CellBufs_Arr[g->cellBufInUse][x][y].ux = 0; //FORCE vel 0
                 continue;
             }
             double pressureRight = FluidGrid_GetPressure(g, x,     y);
@@ -147,6 +148,7 @@ void FluidGrid_UpdateVelocities(SimState_t* g) {
     for (int x = 0; x < vyWidth; x++) {
         for (int y = 0; y < vyHeight; y++) {
             if (FluidGrid_IsSolid(g, x, y) || FluidGrid_IsSolid(g, x, y - 1)) {
+                g->CellBufs_Arr[g->cellBufInUse][x][y].uy = 0; //FORCE vel 0
                 continue;
             }
             double pressureTop    = FluidGrid_GetPressure(g, x, y);

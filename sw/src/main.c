@@ -2,7 +2,7 @@
 #include "Assert_Common.h"
 #include "ForLoop.h"
 #include "LOG.h"
-//#include "Render/inc/Helpers.h"
+// #include "Render/inc/Helpers.h"
 #include "Render/inc/Renderer.h"
 #include "Sim/inc/Sim.h"
 #include "Transform/inc/Transform.h"
@@ -17,15 +17,15 @@
 
 #include <time.h>
 
-#define SIM_RUNTIME_S (30)
+#define SIM_RUNTIME_S (60)
 
-sim_params_t simParams = {.nx = 64 * 4,
-                          .ny = 48 * 4,
-                          .dt = 0.005,                  // simulation timestep in seconds
+sim_params_t simParams = {.nx = 64 * 3,
+                          .ny = 48 * 3,
+                          .dt = 0.01,                  // simulation timestep in seconds
                           .p_density = 1.0,            // fluid density
-                          .w = 0.1,                    // some simulation weight parameter
+                          .w = 0.02,                    // some simulation weight parameter
                           .overrelaxation_const = 1.8, // typical SOR relaxation factor
-                          .PSolver_Interations = 22,    // number of iterations for pressure solver
+                          .PSolver_Interations = 30,    // number of iterations for pressure solver
                           .runTime = {0, 0},           // initialize to 0
                           .advectionScheme = SEMI_LAGRANGIAN,
                           .PsolverScene = JACOBI};

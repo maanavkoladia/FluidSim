@@ -35,6 +35,20 @@ transform_err_t TransForm_ColorFrameYeild(Render_Frame_Colors_t* pFrame) {
     free(pFrame);
 }
 
+static inline int IsSolidCell(SimSnap_t* pSnap, uint64_t fx, uint64_t fy, uint64_t scalingFactor) {
+    double simX = (double)fx / (double)scalingFactor;
+    double simY = (double)fy / (double)scalingFactor;
+
+    uint64_t cx = (uint64_t)simX;
+    uint64_t cy = (uint64_t)simY;
+
+    // Clamp just in case
+    if (cx >= pSnap->nx) cx = pSnap->nx - 1;
+    if (cy >= pSnap->ny) cy = pSnap->ny - 1;
+
+    return pSnap->cells[cx][cy].type == SOLID;
+}
+
 static inline double lerp(double a, double b, double t) {
     return a + (b - a) * t;
 }
@@ -125,11 +139,11 @@ static inline double InterpolateUY(SimSnap_t* pSnap, uint64_t fx, uint64_t fy,
 
 static Color_t VelocityColor(double ux, double uy) {
     float speed = sqrtf(ux * ux + uy * uy);
-    
+
     // Normalize speed to [0, 1] range
     // Adjust the scaling factor (0.1f) to control sensitivity
     float t = fminf(speed * 0.1f, 1.0f);
-    
+
     Color_t c;
     // Grayscale mapping: black (0,0,0) for zero speed, white (1,1,1) for high speed
     c.r = t;
@@ -146,8 +160,18 @@ transform_err_t Snap2ColorFrame(SimSnap_t* pSnap, Render_Frame_Colors_t* pFrame)
 
     for (uint64_t j = 0; j < pFrame->height; j++) {
         for (uint64_t i = 0; i < pFrame->width; i++) {
+
+            // ---- SOLID CELL OVERRIDE ----
+            if (IsSolidCell(pSnap, i, j, scalingFactor)) {
+                pFrame->colors[j * pFrame->width + i] =
+                    (Color_t){.r = 0.0f, .g = 1.0f, .b = 0.0f, .a = 1.0f};
+                continue;
+            }
+
+            // ---- NORMAL VELOCITY-BASED COLOR ----
             double ux = InterpolateUX(pSnap, i, j, scalingFactor);
             double uy = InterpolateUY(pSnap, i, j, scalingFactor);
+
             pFrame->colors[j * pFrame->width + i] = VelocityColor(ux, uy);
         }
     }
