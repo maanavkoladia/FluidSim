@@ -1,4 +1,4 @@
-ON_REMOTE:=true
+ON_REMOTE:=false
 
 PROJECT = FluidSim
 BUILD_DIR = build
@@ -8,15 +8,13 @@ COMPILER = gcc
 LIB_DIR_MPS = mpsLibC
 LIB_MPS = $(LIB_DIR_MPS)/build/$(LIB_DIR_MPS).a
 
-ifeq ($(ON_REMOTE),true) 
+ifeq ($(ON_REMOTE),true)
 COMPILER = nvcc
 LIB_DIR_CK = ./lib/ck/build/lib
 LIB_CK = $(LIB_DIR_CK)/libck.a
 else
 COMPILER = gcc
-
 endif
-
 
 OS_TYPE := $(shell uname -s)
 
@@ -76,23 +74,24 @@ endif
 
 ifeq ($(OS_TYPE),Linux)
     # Common Linux flags
-    LD_FLAGS += -lEGL -lGL
+LD_FLAGS += -lEGL -lGL
 
-    SRC_FILES += \
-        src/Render/src/Renderer_OffScreen.c
+SRC_FILES += \
+	src/Render/src/Renderer_OffScreen.c
 
 
     # Only link GLFW/GLEW if not on remote
-    ifeq ($(ON_REMOTE),false)
-        LD_FLAGS += -lglfw -lGLEW
-    else
-        SRC_FILES += src/Transform/src/FrameColors_Utils_Device.cu 	\
-					 ./src/Sim/cuda_src/Advection_cuda.c	\
-					 ./src/Sim/cuda_src/Pressure_cuda.c		\
+ifeq ($(ON_REMOTE),false)
+LD_FLAGS += -lglfw -lGLEW
+else
+SRC_FILES += \
+			 src/Transform/src/FrameColors_Utils_Device.cu 	\
+			 src/Sim/cuda_src/Advection_cuda.c	\
+			 src/Sim/cuda_src/Pressure_cuda.c	\
 
 C_FLAGS += $(NVCC_FLAGS)
 
-    endif
+endif
 endif
 
 OBJS = $(patsubst src/%.c,$(BUILD_DIR)/%.o,$(SRC_FILES))
@@ -107,12 +106,17 @@ $(LIB_MPS):
 	$(MAKE) -C $(LIB_DIR_MPS) all
 
 $(TARGET): $(OBJS) $(LIB_MPS) $(LIB_CK) | $(BUILD_DIR)
-	$(CC) -o $@ $(OBJS) $(LIB_MPS) $(LIB_CK) $(LD_FLAGS)
+	$(COMPILER) -o $@ $(OBJS) $(LIB_MPS) $(LIB_CK) $(LD_FLAGS)
 
 # Compile object files and generate dependency files
 $(BUILD_DIR)/%.o: src/%.c | $(BUILD_DIR)
 	mkdir -p $(dir $@)
-	$(CC) $(C_FLAGS) $(INCLUDES) -c $< -o $@
+	$(COMPILER) $(C_FLAGS) $(INCLUDES) -c $< -o $@
+
+# CUDA files
+$(BUILD_DIR)/%.o: src/%.cu | $(BUILD_DIR)
+	mkdir -p $(dir $@)
+	$(COMPILER) $(C_FLAGS) $(INCLUDES) -c $< -o $@
 
 # Include dependency files if they exist
 -include $(DEPS)
