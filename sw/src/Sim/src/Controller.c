@@ -444,7 +444,7 @@ static void* Task_Controller(void* pvArgs) {
 
     // PrintCellVel(pSimState);
     // CreateSolidSquare(pSimState, 4);
-    CreateSolidCircle(pSimState, 13);
+    // CreateSolidCircle(pSimState, 13);
 
     while (1) {
         if (AtomicFlag_GetStatus(&killFlag) == KILL_FLAG_SET) {
@@ -453,8 +453,8 @@ static void* Task_Controller(void* pvArgs) {
         }
         // InjectVelocityCenter(pSimState);
         // InjectVelocity_LeftEdge_ToRight(pSimState, 1);
-        uint64_t radius = 13;                                     // tweak as needed, in cells
-        InjectVelocityCircleLeftEdge(pSimState, radius, 13, 1.2); // strong rightward inlet
+        uint64_t radius = 7;                                     // tweak as needed, in cells
+        InjectVelocityCircleLeftEdge(pSimState, radius, 7, 1.5); // strong rightward inlet
 
 // PrintCellVel(pSimState);
 //  LOG("Ran TimeStep: %lu", cycleCount);

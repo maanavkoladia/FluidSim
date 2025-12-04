@@ -169,8 +169,8 @@ transform_err_t Snap2ColorFrame(SimSnap_t* pSnap, Render_Frame_Colors_t* pFrame)
 
             // ---- SOLID CELL OVERRIDE ----
             if (IsSolidCell(pSnap, i, j, scalingFactor)) {
-                pFrame->colors[j * pFrame->width + i] =
-                    (Color_t){.r = 0.0f, .g = 1.0f, .b = 0.0f, .a = 1.0f};
+                pFrame->colors[j * pFrame->width + i] = (Color_t){
+                    .r = 110.0f / 255.0f, .g = 104.0f / 255.0f, .b = 104.0f / 255.0f, .a = 1.0f};
                 continue;
             }
 

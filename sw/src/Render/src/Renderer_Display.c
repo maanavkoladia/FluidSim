@@ -88,7 +88,7 @@ static void* Task_Renderer_Display(void* pvArgs) {
         if (AtomicFlag_GetStatus(&killFlag) == FLAG_SET) {
             return NULL;
         }
-        // usleep(50000);
+        usleep(16700);
         Render_Draw();
 
         Render_SwapBuffers();
