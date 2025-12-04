@@ -40,10 +40,10 @@ typedef enum {
 
 typedef struct {
     uint64_t nx, ny;
-    double dt;
-    double p_density;
-    double w;
-    double overrelaxation_const;
+    float dt;
+    float p_density;
+    float w;
+    float overrelaxation_const;
     uint64_t PSolver_Interations;
     struct timespec runTime;
     Advection_Scheme_t advectionScheme;
@@ -51,9 +51,9 @@ typedef struct {
 } sim_params_t;
 
 typedef struct {
-    double ux; // right is pos, left is negative
-    double uy; // op is pos, down is neg
-    double p;  // pressure
+    float ux; // right is pos, left is negative
+    float uy; // op is pos, down is neg
+    float p;  // pressure
     CellMaterial_t type;
     uint64_t fluidNeighbors;
 
