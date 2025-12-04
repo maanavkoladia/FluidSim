@@ -409,7 +409,7 @@ static void InjectVelocity_LeftEdge_ToRight(SimState_t* pState, velocity_t vel) 
     }
 }
 
-v
+
 
 static sim_err_t RunOnePassOver(SimState_t* pSimState) {
     ASSERT_COMMON(pSimState, "Got a NULL Sim State");

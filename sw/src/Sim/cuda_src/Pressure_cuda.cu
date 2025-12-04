@@ -13,7 +13,7 @@
 
 // Match your enum value
 #ifndef SOLID
-#define SOLID 1
+#define SOLID 2
 #endif
 
 // =============================
@@ -232,15 +232,15 @@ void UpdateVelocitiesKernel(float* __restrict__ ux,
 //  - After this function, d_pCurr holds the final pressure field
 
 cudaError_t RunPressureSolverCUDA(int nx, int ny,
-                                  double dt,
-                                  double rho,
-                                  double w,
-                                  double overrelax_const,
+                                  float dt,
+                                  float rho,
+                                  float w,
+                                  float overrelax_const,
                                   int num_iter,
-                                  double* d_pCurr,
-                                  double* d_pNext,
-                                  double* d_ux,
-                                  double* d_uy,
+                                  float* d_pCurr,
+                                  float* d_pNext,
+                                  float* d_ux,
+                                  float* d_uy,
                                   int* d_cellType)
 {
     dim3 block(16, 16);
@@ -260,7 +260,7 @@ cudaError_t RunPressureSolverCUDA(int nx, int ny,
         if (err != cudaSuccess) return err;
 
         // ping-pong pressures
-        double* tmp = d_pCurr;
+        float* tmp = d_pCurr;
         d_pCurr = d_pNext;
         d_pNext = tmp;
     }
@@ -282,16 +282,16 @@ cudaError_t RunPressureSolverCUDA(int nx, int ny,
 #define BLOCK_Y 16
 
 __global__
-void PressureSolveKernel_tiled(const double* __restrict__ pCurr,
-                               double* __restrict__ pNext,
-                               const double* __restrict__ ux,
-                               const double* __restrict__ uy,
+void PressureSolveKernel_tiled(const float* __restrict__ pCurr,
+                               float* __restrict__ pNext,
+                               const float* __restrict__ ux,
+                               const float* __restrict__ uy,
                                const int* __restrict__ cellType,
                                int nx, int ny,
-                               double dt,
-                               double rho,   // p_density
-                               double w,     // physical width
-                               double overrelax_const)
+                               float dt,
+                               float rho,   // p_density
+                               float w,     // physical width
+                               float overrelax_const)
 {
     int gx = blockIdx.x * BLOCK_X + threadIdx.x; // global x
     int gy = blockIdx.y * BLOCK_Y + threadIdx.y; // global y
@@ -299,7 +299,7 @@ void PressureSolveKernel_tiled(const double* __restrict__ pCurr,
     int tx = threadIdx.x; // local x in block
     int ty = threadIdx.y; // local y in block
 
-    __shared__ double sh_p[BLOCK_Y + 2][BLOCK_X + 2];
+    __shared__ float sh_p[BLOCK_Y + 2][BLOCK_X + 2];
 
     // Helper lambda: clamp + index
     auto clamp_int_d = [] __device__ (int v, int lo, int hi) {
@@ -395,10 +395,10 @@ void PressureSolveKernel_tiled(const double* __restrict__ pCurr,
         int xb  = clamp_int_d(x + 0, 0, nx - 1);
         int yb  = clamp_int_d(y + 0, 0, ny - 1);
 
-        double velocityTop    = uy[idx2D(xt, yt, nx)];
-        double velocityLeft   = ux[idx2D(xl, yl, nx)];
-        double velocityRight  = ux[idx2D(xr, yr, nx)];
-        double velocityBottom = uy[idx2D(xb, yb, nx)];
+        float velocityTop    = uy[idx2D(xt, yt, nx)];
+        float velocityLeft   = ux[idx2D(xl, yl, nx)];
+        float velocityRight  = ux[idx2D(xr, yr, nx)];
+        float velocityBottom = uy[idx2D(xb, yb, nx)];
 
         return (velocityRight - velocityLeft + velocityTop - velocityBottom) / dt;
     };
@@ -406,7 +406,7 @@ void PressureSolveKernel_tiled(const double* __restrict__ pCurr,
     bool solid = isSolid_d(gx, gy);
     int edges  = fluidEdgeCount_d(gx, gy);
 
-    double newPressure = 0.0;
+    float newPressure = 0.0;
 
     if (solid || edges == 0) {
         newPressure = 0.0;
@@ -416,11 +416,11 @@ void PressureSolveKernel_tiled(const double* __restrict__ pCurr,
         int sx = tx + 1;
         int sy = ty + 1;
 
-        double pCenter  = sh_p[sy    ][sx    ];
-        double pTop     = sh_p[sy + 1][sx    ];
-        double pBottom  = sh_p[sy - 1][sx    ];
-        double pLeft    = sh_p[sy    ][sx - 1];
-        double pRight   = sh_p[sy    ][sx + 1];
+        float pCenter  = sh_p[sy    ][sx    ];
+        float pTop     = sh_p[sy + 1][sx    ];
+        float pBottom  = sh_p[sy - 1][sx    ];
+        float pLeft    = sh_p[sy    ][sx - 1];
+        float pRight   = sh_p[sy    ][sx + 1];
 
         // Respect flow flags like in CPU code
         int fT = flowTop_d   (gx, gy);
@@ -428,17 +428,17 @@ void PressureSolveKernel_tiled(const double* __restrict__ pCurr,
         int fR = flowRight_d (gx, gy);
         int fB = flowBottom_d(gx, gy);
 
-        double pressureTop    = pTop    * fT;
-        double pressureLeft   = pLeft   * fL;
-        double pressureRight  = pRight  * fR;
-        double pressureBottom = pBottom * fB;
+        float pressureTop    = pTop    * fT;
+        float pressureLeft   = pLeft   * fL;
+        float pressureRight  = pRight  * fR;
+        float pressureBottom = pBottom * fB;
 
-        double pressureSum = pressureRight + pressureLeft + pressureTop + pressureBottom;
-        double vTerm = velTerm_d(gx, gy);
+        float pressureSum = pressureRight + pressureLeft + pressureTop + pressureBottom;
+        float vTerm = velTerm_d(gx, gy);
 
-        newPressure = (pressureSum - rho * w * vTerm) / (double)edges;
+        newPressure = (pressureSum - rho * w * vTerm) / (float)edges;
     }
 
-    double oldPressure = sh_p[ty + 1][tx + 1]; // same as pCurr[idx]
+    float oldPressure = sh_p[ty + 1][tx + 1]; // same as pCurr[idx]
     pNext[idx] = oldPressure + (newPressure - oldPressure) * overrelax_const;
 }
