@@ -1,5 +1,5 @@
 # === Configuration ===
-ON_REMOTE := true
+ON_REMOTE := false
 
 PROJECT = FluidSim
 BUILD_DIR = build
@@ -8,23 +8,20 @@ TARGET = $(PROJECT).elf
 OS_TYPE := $(shell uname -s)
 
 CC=gcc
-
+NVCC=nvcc
 # Default compiler
 ifeq ($(ON_REMOTE),true)
-    COMPILER = nvcc
     LIB_DIR_CK = ./lib/ck/build/lib
     LIB_CK = $(LIB_DIR_CK)/libck.a
-else
-    COMPILER = gcc
 endif
 
 LIB_DIR_MPS = mpsLibC
 LIB_MPS = $(LIB_DIR_MPS)/build/$(LIB_DIR_MPS).a
 
 # === Flags ===
-C_FLAGS = -Wextra -Wall -O0 -g3 -MMD -MP -std=c11
+C_FLAGS = -Wextra -Wall -O0 -g3 -MMD -MP
 LD_FLAGS = -lm -lpthread
-NVCC_FLAGS = -O2 -std=c11 --expt-extended-lambda -arch=sm_70
+NVCC_FLAGS = -O2 -std=c++14 --expt-extended-lambda -arch=sm_70
 
 # === Source files ===
 SRC_C_FILES = \
@@ -44,7 +41,7 @@ SRC_C_FILES = \
     src/Render/src/Renderer_Display.c \
     src/Render/src/Renderer_ColorFrame_OS.c
 
-SRC_CUDA_FILES =  # will only be used if ON_REMOTE=true
+SRC_CUDA_FILES =  
 
 ifeq ($(OS_TYPE),Darwin)
     LD_FLAGS += -framework OpenGL -L/opt/homebrew/lib
@@ -104,7 +101,7 @@ $(BUILD_DIR)/%.o: src/%.c | $(BUILD_DIR)
 # Compile CUDA files
 $(BUILD_DIR)/%.o: src/%.cu | $(BUILD_DIR)
 	mkdir -p $(dir $@)
-	nvcc $(NVCC_FLAGS) $(INCLUDES) -c $< -o $@
+	$(NVCC) $(NVCC_FLAGS) $(INCLUDES) -c $< -o $@
 
 # Include dependency files
 -include $(DEPS)
