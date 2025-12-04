@@ -1,6 +1,6 @@
 #include "../inc/Renderer.h"
 #include "../../config.h"
-
+#include "LOG.h"
 #ifdef OFF_SCREEN_RENDERING
 #    include "Renderer_OffScreen.h"
 #else
@@ -18,10 +18,12 @@
 #if defined(__APPLE__)
 render_err_t Render_Init(void) {
     LOG("Render Starting Up");
-    AtomicFlag_Clear(&killFlag);
-    // create the sim snap fifo
-    LF_Fifo_Init(&frameInFifo, FRAME_IN_FIFO_SIZE);
-    Task_Renderer(NULL);
+    
+#    ifdef OFF_SCREEN_RENDERING
+OffScreenRender_Init();
+#    else
+DisplayService_Init();
+#    endif
     // LOG("Renderer Init Success");
     return RENDER_SUCCESS;
 }
