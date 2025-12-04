@@ -1,19 +1,18 @@
-
-#include <sched.h>
-#include <time.h>
-#include <unistd.h>
-#define GL_SILENCE_DEPRECATION
-#include "../../Transform/inc/Transform.h"
-#include "../inc/Renderer.h"
-#include "Assert_Common.h"
-#include "AtomicFlag.h"
-#include "LFfifo.h"
-#include "Renderer_ColorFrame.h"
-#include <GLFW/glfw3.h>
-#include <pthread.h>
-static LF_Fifo_t* pColorFrameInFifo = NULL;
-
+#include "../../config.h"
 #ifndef OFF_SCREEN_RENDERING
+#    include <sched.h>
+#    include <time.h>
+#    include <unistd.h>
+#    define GL_SILENCE_DEPRECATION
+#    include "../../Transform/inc/Transform.h"
+#    include "../inc/Renderer.h"
+#    include "Assert_Common.h"
+#    include "AtomicFlag.h"
+#    include "LFfifo.h"
+#    include "Renderer_ColorFrame.h"
+#    include <GLFW/glfw3.h>
+#    include <pthread.h>
+static LF_Fifo_t* pColorFrameInFifo = NULL;
 
 // -----------------------------------------------------------------------------
 // Color Frame
