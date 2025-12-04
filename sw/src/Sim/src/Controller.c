@@ -212,7 +212,7 @@ static void InjectVelocityCircleLeftEdge(SimState_t* sim,
             double dist2 = dx * dx + dy * dy;
 
             if (dist2 <= r2) {
-                Cell_t* c = &cells[x][y];
+                Cell_t* c = &cells[x+3][y];
                 c->ux += ux; // inject rightward velocity
                 // leave uy unchanged (no vertical injection)
             }
@@ -319,7 +319,7 @@ static void* Task_Controller(void* pvArgs) {
             FreeSimState(pSimState);
             return TASK_CONTROLLER_RET;
         }
-        // InjectVelocityCenter(pSimState);
+        //InjectVelocityCenter(pSimState);
          //InjectVelocity_LeftEdge_ToRight(pSimState, 10);
         uint64_t radius = 5;                                   // tweak as needed, in cells
         InjectVelocityCircleLeftEdge(pSimState, radius, 0.1); // strong rightward inlet
