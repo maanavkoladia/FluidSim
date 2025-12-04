@@ -52,23 +52,24 @@ HDR_FILES = \
 
 
 ifeq ($(OS_TYPE),Darwin)
-    LD_FLAGS += \
-				-framework OpenGL	\
-				-L/opt/homebrew/lib
+LD_FLAGS += \
+			-framework OpenGL	\
+			-L/opt/homebrew/lib
+C_FLAGS += \
+		   -I/opt/homebrew/include 
 
-	C_FLAGS += \
-			   -I/opt/homebrew/include 
-
+SRC_FILES+= \
+			src/Render/src/Renderer_OffScreen_Stub.c
 endif
 
 ifeq ($(OS_TYPE),Linux)
-    LD_FLAGS += \
-				-lEGL 	\
-				-lGL	\
-				-lGLEW 	
+LD_FLAGS += \
+			-lEGL 	\
+			-lGL	\
+			-lGLEW 		\
 
-	SRC_FILES+= \
-				src/Render/src/Renderer_OffScreen.c
+SRC_FILES+= \
+			src/Render/src/Renderer_OffScreen.c
 
 endif
 
