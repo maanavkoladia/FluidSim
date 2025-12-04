@@ -366,6 +366,9 @@ void CreateSolidCircle(SimState_t* pState, uint64_t radius) {
 
     Cell_t** pCells = GetCellsInUse(pState);
 
+    Cell_t** pCellsNext = GetCellNextInUse(pState);
+
+
     // Loop over a bounding box around the circle
     for (int64_t dy = -(int64_t)radius; dy <= (int64_t)radius; dy++) {
         for (int64_t dx = -(int64_t)radius; dx <= (int64_t)radius; dx++) {
@@ -385,6 +388,29 @@ void CreateSolidCircle(SimState_t* pState, uint64_t radius) {
                 pCells[x][y].ux = 0.0;
                 pCells[x][y].uy = 0.0;
                 pCells[x][y].p = 0.0;
+            }
+        }
+    }
+
+    // Loop over a bounding box around the circle
+    for (int64_t dy = -(int64_t)radius; dy <= (int64_t)radius; dy++) {
+        for (int64_t dx = -(int64_t)radius; dx <= (int64_t)radius; dx++) {
+
+            // Circle equation: x^2 + y^2 <= r^2
+            if ((dx * dx + dy * dy) <= (int64_t)(radius * radius)) {
+
+                int64_t x = (int64_t)midX + dx;
+                int64_t y = (int64_t)midY + dy;
+
+                // Bounds check (important near edges)
+                if (x < 0 || y < 0 || x >= (int64_t)pState->nx || y >= (int64_t)pState->ny) {
+                    continue;
+                }
+
+                pCellsNext[x][y].type = SOLID;
+                pCellsNext[x][y].ux = 0.0;
+                pCellsNext[x][y].uy = 0.0;
+                pCellsNext[x][y].p = 0.0;
             }
         }
     }
@@ -444,7 +470,7 @@ static void* Task_Controller(void* pvArgs) {
 
     // PrintCellVel(pSimState);
     // CreateSolidSquare(pSimState, 4);
-    //CreateSolidCircle(pSimState, 13);
+    CreateSolidCircle(pSimState, 9);
 
     while (1) {
         if (AtomicFlag_GetStatus(&killFlag) == KILL_FLAG_SET) {
@@ -454,7 +480,7 @@ static void* Task_Controller(void* pvArgs) {
         // InjectVelocityCenter(pSimState);
         // InjectVelocity_LeftEdge_ToRight(pSimState, 1);
         uint64_t radius = 10;                                     // tweak as needed, in cells
-        InjectVelocityCircleLeftEdge(pSimState, radius, 10, 0.1); // strong rightward inlet
+        InjectVelocityCircleLeftEdge(pSimState, radius, 10, 1.0); // strong rightward inlet
 
 // PrintCellVel(pSimState);
 //  LOG("Ran TimeStep: %lu", cycleCount);
