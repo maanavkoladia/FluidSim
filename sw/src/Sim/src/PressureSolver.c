@@ -160,7 +160,7 @@ void FluidGrid_UpdateVelocities(SimState_t* g) {
     int vyWidth  = g->nx;
     int vyHeight = g->ny;
 
-    SyncPressure(g);
+    //SyncPressure(g);
 
     // Horizontal velocities
     for (int x = 0; x < vxWidth; x++) {
