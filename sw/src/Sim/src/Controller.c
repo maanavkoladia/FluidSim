@@ -212,7 +212,7 @@ static void InjectVelocityCircleLeftEdge(SimState_t* sim,
             double dist2 = dx * dx + dy * dy;
 
             if (dist2 <= r2) {
-                Cell_t* c = &cells[x+3][y];
+                Cell_t* c = &cells[x+10][y];
                 c->ux += ux; // inject rightward velocity
                 // leave uy unchanged (no vertical injection)
             }
@@ -273,7 +273,7 @@ static void InjectVelocity_LeftEdge_ToRight(SimState_t* pState, velocity_t vel) 
     ASSERT_COMMON_NOT_NULL(pState);
     Cell_t** pCurrCells = GetCellsInUse(pState);
     FOR_LOOP_COMMON(i, pState->ny) {
-        pCurrCells[0][i].ux = vel;
+        pCurrCells[10][i].ux += vel;
     }
 }
 
@@ -313,16 +313,16 @@ static void* Task_Controller(void* pvArgs) {
     // Inject velocity
     ASSERT_COMMON_POSIX(InitSimState(&simParams, &pSimState), "Failed to init simState Structure");
     // PrintCellVel(pSimState);
-    //CreateSolidSquare(pSimState, 10);
+    CreateSolidSquare(pSimState, 4);
     while (1) {
         if (AtomicFlag_GetStatus(&killFlag) == KILL_FLAG_SET) {
             FreeSimState(pSimState);
             return TASK_CONTROLLER_RET;
         }
         //InjectVelocityCenter(pSimState);
-         //InjectVelocity_LeftEdge_ToRight(pSimState, 10);
-        uint64_t radius = 5;                                   // tweak as needed, in cells
-        InjectVelocityCircleLeftEdge(pSimState, radius, 0.1); // strong rightward inlet
+         InjectVelocity_LeftEdge_ToRight(pSimState, 1);
+        //uint64_t radius = 5;                                   // tweak as needed, in cells
+        //InjectVelocityCircleLeftEdge(pSimState, radius, 1); // strong rightward inlet
 
         // PrintCellVel(pSimState);
         //  LOG("Ran TimeStep: %lu", cycleCount);
