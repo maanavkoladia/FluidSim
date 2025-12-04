@@ -1,14 +1,17 @@
-ON_REMOTE:=true
+ON_REMOTE:=false
 
 PROJECT = FluidSim
 BUILD_DIR = build
 TARGET = $(PROJECT).elf
 CC = gcc
-
 LIB_DIR_MPS = mpsLibC
 LIB_MPS = $(LIB_DIR_MPS)/build/$(LIB_DIR_MPS).a
+
+ifeq ($(ON_REMOTE),true) 
 LIB_DIR_CK = ./lib/ck/build/lib
 LIB_CK = $(LIB_DIR_CK)/libck.a
+endif
+
 
 OS_TYPE := $(shell uname -s)
 

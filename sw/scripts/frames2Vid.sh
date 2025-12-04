@@ -1,55 +1,45 @@
 #!/bin/bash
 
-# Usage: ./convert_frames.sh <frame_dir> <output_file> [width] [height] [framerate]
-# Example: ./convert_frames.sh frames output.mp4 1920 1080 60
+# Usage: ./frames2Vid.sh <frame_dir> [width height framerate]
 
-frameDirPath=$1
-outFileName=$2
-width=${3:-480}
-height=${4:-480}
-framerate=${5:-100}
+DIR=$1
+WIDTH=${2:-480}
+HEIGHT=${3:-480}
+FPS=${4:-100}   # optional framerate
 
-# Check if required arguments are provided
-if [ -z "$frameDirPath" ] || [ -z "$outFileName" ]; then
-    echo "Usage: $0 <frame_dir> <output_file> [width] [height] [framerate]"
-    echo "Example: $0 frames output.mp4 1920 1080 60"
+if [ -z "$DIR" ]; then
+    echo "Usage: $0 <frame_dir> [width height framerate]"
     exit 1
 fi
 
-# Check if frame directory exists
-if [ ! -d "$frameDirPath" ]; then
-    echo "Error: Frame directory '$frameDirPath' does not exist"
-    exit 1
-fi
+outdir="${DIR}_png"
+mkdir -p "$outdir"
 
-# Count frames
-frame_count=$(ls -1 "$frameDirPath"/frame_*.rgba 2>/dev/null | wc -l)
-if [ "$frame_count" -eq 0 ]; then
-    echo "Error: No .rgba frames found in '$frameDirPath'"
-    exit 1
-fi
+echo "Converting RGBA → PNG: $DIR → $outdir"
 
-echo "Found $frame_count frames in $frameDirPath"
-echo "Converting to $outFileName at ${width}x${height} @ ${framerate}fps..."
+for f in "$DIR"/frame_*.rgba; do
+    base=$(basename "$f" .rgba)
+    ffmpeg -v error \
+        -f rawvideo \
+        -pixel_format rgba \
+        -video_size ${WIDTH}x${HEIGHT} \
+        -i "$f" \
+        -frames:v 1 \
+        "$outdir/${base}.png"
+done
 
-# Run ffmpeg with the provided parameters
+echo "PNG conversion done."
+
+# --- Convert PNGs to MP4 ---
+OUT="${DIR}.mp4"
+echo "Converting PNGs → MP4: $OUT at ${WIDTH}x${HEIGHT} @ ${FPS}fps"
+
 ffmpeg -y \
-    -f rawvideo \
-    -pixel_format rgba \
-    -video_size ${width}x${height} \
-    -framerate ${framerate} \
-    -i "$frameDirPath/frame_%05d.rgba" \
-    -c:v libx264 \
-    -preset fast \
-    -crf 18 \
+    -framerate $FPS \
+    -i "${outdir}/frame_%05d.png" \
+    -c:v libx264 -preset fast -crf 18 \
     -pix_fmt yuv420p \
-    "$outFileName"
+    "$OUT"
 
-# Check if ffmpeg succeeded
-if [ $? -eq 0 ]; then
-    echo "Success! Video created: $outFileName"
-    ls -lh "$outFileName"
-else
-    echo "Error: ffmpeg conversion failed"
-    exit 1
-fi
+echo "Done! Video created: $OUT"
+ls -lh "$OUT"

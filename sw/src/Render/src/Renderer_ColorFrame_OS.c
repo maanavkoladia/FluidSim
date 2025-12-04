@@ -4,15 +4,29 @@
 #include "AtomicFlag.h"
 #include "LFfifo.h"
 #include "Renderer_ColorFrame.h"
+#include <errno.h>
+#include <fcntl.h>
 #include <pthread.h>
 #include <sched.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 static LF_Fifo_t* pColorFrameInFifo = NULL;
 static int frame_counter = 0;
+
+/* If you don't want the program to stream directly to ffmpeg set this to 0.
+ * When enabled the program will both write frames to frames/frame_00000.rgba ...
+ * AND stream them to ffmpeg via a pipe to produce output.mp4 in realtime. */
+#ifndef ENABLE_FFMPEG_PIPE
+#    define ENABLE_FFMPEG_PIPE 1
+#endif
+
+static FILE* video_pipe = NULL;
 
 #ifdef OFF_SCREEN_RENDERING
 
@@ -22,19 +36,33 @@ static int frame_counter = 0;
 static inline unsigned char float_to_byte(float f) {
     if (f <= 0.0f) return 0;
     if (f >= 1.0f) return 255;
+    /* multiply before cast to reduce rounding bias */
     return (unsigned char)(f * 255.0f);
 }
 
 // ----------------------------------------
-// Write raw RGBA to file
+// Helper: ensure directory exists
+// ----------------------------------------
+static void ensure_frames_dir(void) {
+    /* mkdir -p equivalent */
+    struct stat st = {0};
+    if (stat("frames", &st) == -1) {
+        if (mkdir("frames", 0755) != 0) {
+            fprintf(stderr, "ERROR: failed to create frames/ directory\n");
+        }
+    }
+}
+
+// ----------------------------------------
+// Raw RGBA - write to disk and optionally pipe to ffmpeg
 // ----------------------------------------
 static void write_frame_raw_to_ffmpeg(Render_Frame_Colors_t* pFrame) {
     ASSERT_COMMON_NOT_NULL(pFrame && pFrame->colors);
 
-    // Ensure frames/ directory exists
-    system("mkdir -p frames");
+    ensure_frames_dir();
 
-    // Open pipe to ffmpeg on first frame
+#    if ENABLE_FFMPEG_PIPE
+    /* Open pipe to ffmpeg on first frame */
     if (video_pipe == NULL) {
         char cmd[512];
         snprintf(cmd, sizeof(cmd),
@@ -44,14 +72,23 @@ static void write_frame_raw_to_ffmpeg(Render_Frame_Colors_t* pFrame) {
 
         printf("FFmpeg command: %s\n", cmd);
         video_pipe = popen(cmd, "w");
-        ASSERT_COMMON_NOT_NULL(video_pipe);
-        LOG("Opened ffmpeg pipe for raw video encoding (converting float->byte)");
+        if (!video_pipe) {
+            fprintf(stderr, "ERROR: popen() failed opening ffmpeg pipe\n");
+            /* We continue: frames will still be written to disk. */
+        } else {
+            LOG("Opened ffmpeg pipe for raw video encoding (converting float->byte)");
+        }
     }
+#    endif
 
     // Convert float colors to byte RGBA
-    size_t num_pixels = pFrame->width * pFrame->height;
-    unsigned char* byte_buffer = (unsigned char*)malloc(num_pixels * 4);
-    ASSERT_COMMON_NOT_NULL(byte_buffer);
+    size_t num_pixels = (size_t)pFrame->width * (size_t)pFrame->height;
+    size_t frame_bytes = num_pixels * 4;
+    unsigned char* byte_buffer = (unsigned char*)malloc(frame_bytes);
+    if (!byte_buffer) {
+        fprintf(stderr, "ERROR: malloc failed for frame buffer (%zu bytes)\n", frame_bytes);
+        return;
+    }
 
     for (size_t i = 0; i < num_pixels; i++) {
         Color_t* c = &pFrame->colors[i];
@@ -64,23 +101,42 @@ static void write_frame_raw_to_ffmpeg(Render_Frame_Colors_t* pFrame) {
     // --- WRITE TO DISK ---
     char filename[256];
     snprintf(filename, sizeof(filename), "frames/frame_%05d.rgba", frame_counter);
+
     FILE* f = fopen(filename, "wb");
     if (f) {
-        fwrite(byte_buffer, 1, num_pixels * 4, f);
+        size_t wrote = fwrite(byte_buffer, 1, frame_bytes, f);
+        if (wrote != frame_bytes) {
+            fprintf(stderr, "ERROR: wrote %zu/%zu bytes to %s\n", wrote, frame_bytes, filename);
+        }
+        fflush(f);
+        /* optionally ensure data is on disk */
+#    if defined(__linux__)
+        /* get fd and fsync */
+        int fd = fileno(f);
+        if (fd >= 0) {
+            fsync(fd);
+        }
+#    endif
         fclose(f);
     } else {
-        fprintf(stderr, "ERROR: Cannot write frame to %s\n", filename);
+        fprintf(stderr, "ERROR: Cannot write frame to %s: %s\n", filename, strerror(errno));
     }
 
-    // --- WRITE TO FFmpeg PIPE ---
-    size_t written = fwrite(byte_buffer, 1, num_pixels * 4, video_pipe);
-    if (written != num_pixels * 4) {
-        fprintf(stderr, "WARNING: Frame %d - wrote %zu/%zu bytes to FFmpeg\n", frame_counter,
-                written, num_pixels * 4);
+    // --- WRITE TO FFmpeg PIPE (if available) ---
+#    if ENABLE_FFMPEG_PIPE
+    if (video_pipe) {
+        size_t written = fwrite(byte_buffer, 1, frame_bytes, video_pipe);
+        if (written != frame_bytes) {
+            fprintf(stderr, "WARNING: Frame %d - wrote %zu/%zu bytes to FFmpeg\n", frame_counter,
+                    written, frame_bytes);
+        }
+        fflush(video_pipe);
     }
+#    endif
 
-    fflush(video_pipe);
     free(byte_buffer);
+
+    /* increment frame counter only here */
     frame_counter++;
 }
 
@@ -90,18 +146,17 @@ static void write_frame_raw_to_ffmpeg(Render_Frame_Colors_t* pFrame) {
 render_err_t Render_ColorFrame_Process(void) {
     Render_Frame_Colors_t* pFrame = NULL;
 
-    // Non-blocking pop from FIFO
+    /* Non-blocking pop from FIFO (spin) */
     while (LF_Fifo_SpinPop(pColorFrameInFifo, &pFrame) == LF_FIFO_FAIL_TRY_POP) {
         sched_yield();
     }
 
     ASSERT_COMMON_NOT_NULL(pFrame);
 
-    // Write frame
-    write_frame_raw_to_file(pFrame);
-    frame_counter++;
+    /* Write frame (writes to disk and optionally pipes to ffmpeg) */
+    write_frame_raw_to_ffmpeg(pFrame);
 
-    // Return frame to transform service
+    /* Return frame to transform service */
     TransForm_ColorFrameYeild(pFrame);
 
     return RENDER_SUCCESS;
@@ -124,15 +179,28 @@ render_err_t Render_ColorFramesProcessing_Init(void) {
                         "Failed to init frame FIFO");
 
     frame_counter = 0;
+    video_pipe = NULL;
 
-    // Create frames directory
-    system("mkdir -p frames");
+    /* Create frames directory up-front (avoid repeated system() calls) */
+    ensure_frames_dir();
 
     LOG("Renderer: Color Frames Init Success (Writing raw RGBA files to frames/)");
     return RENDER_SUCCESS;
 }
 
 render_err_t Render_ColorFramesProcessing_Dtr(void) {
+    /* Close ffmpeg pipe if opened (and wait for encoder to finish) */
+#    if ENABLE_FFMPEG_PIPE
+    if (video_pipe) {
+        int rc = pclose(video_pipe);
+        if (rc != 0) {
+            LOG("Warning: ffmpeg returned non-zero status: %d", rc);
+        }
+        video_pipe = NULL;
+        LOG("Closed ffmpeg pipe - wrote %d frames to output.mp4", frame_counter);
+    }
+#    endif
+
     ASSERT_COMMON_POSIX(LF_Fifo_Dtr(pColorFrameInFifo), "Failed to DTR FIFO");
 
     LOG("Wrote %d raw RGBA frames to frames/ directory", frame_counter);
@@ -144,4 +212,4 @@ render_err_t Render_ColorFramesProcessing_Dtr(void) {
     return RENDER_SUCCESS;
 }
 
-#endif
+#endif /* OFF_SCREEN_RENDERING */
