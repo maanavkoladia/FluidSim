@@ -10,7 +10,6 @@
 #    include <math.h>
 #    include <stdint.h>
 
-<<<<<<< HEAD
 // Flattened cell structure for GPU (since 2D arrays aren't GPU-friendly)
 struct FlattenedCell {
     float ux;
@@ -20,8 +19,6 @@ struct FlattenedCell {
     uint64_t fluidNeighbors;
 };
 
-=======
->>>>>>> ba10a1acac661d9a0ec67a4e4bd525bb2f42d04f
 // Device function: Linear interpolation
 __device__ inline float lerp_device(float a, float b, float t) {
     return a + (b - a) * t;
@@ -45,13 +42,8 @@ __device__ inline int IsSolidCell_Device(const CellMaterial_t* type, uint64_t nx
 }
 
 // Device function: Interpolate UX
-<<<<<<< HEAD
-__device__ inline float InterpolateUX_Device(const FlattenedCell* cells, uint64_t nx, uint64_t ny,
-                                             uint64_t fx, uint64_t fy, uint64_t scalingFactor) {
-=======
 __device__ inline float InterpolateUX_Device(const float* ux, uint64_t nx, uint64_t ny, uint64_t fx,
                                              uint64_t fy, uint64_t scalingFactor) {
->>>>>>> ba10a1acac661d9a0ec67a4e4bd525bb2f42d04f
     float simX = (float)fx / (float)scalingFactor;
     float simY = (float)fy / (float)scalingFactor;
 
@@ -70,25 +62,15 @@ __device__ inline float InterpolateUX_Device(const float* ux, uint64_t nx, uint6
     float BL_ux = ux[cy1 * nx + cx];
     float BR_ux = ux[cy1 * nx + cx1];
 
-<<<<<<< HEAD
-    float top = lerp_device(TL->ux, TR->ux, fxFrac);
-    float bottom = lerp_device(BL->ux, BR->ux, fxFrac);
-=======
     float top = lerp_device(TL_ux, TR_ux, fxFrac);
     float bottom = lerp_device(BL_ux, BR_ux, fxFrac);
->>>>>>> ba10a1acac661d9a0ec67a4e4bd525bb2f42d04f
 
     return lerp_device(top, bottom, fyFrac);
 }
 
 // Device function: Interpolate UY
-<<<<<<< HEAD
-__device__ inline float InterpolateUY_Device(const FlattenedCell* cells, uint64_t nx, uint64_t ny,
-                                             uint64_t fx, uint64_t fy, uint64_t scalingFactor) {
-=======
 __device__ inline float InterpolateUY_Device(const float* uy, uint64_t nx, uint64_t ny, uint64_t fx,
                                              uint64_t fy, uint64_t scalingFactor) {
->>>>>>> ba10a1acac661d9a0ec67a4e4bd525bb2f42d04f
     float simX = (float)fx / (float)scalingFactor;
     float simY = (float)fy / (float)scalingFactor;
 
@@ -107,13 +89,8 @@ __device__ inline float InterpolateUY_Device(const float* uy, uint64_t nx, uint6
     float BL_uy = uy[cy1 * nx + cx];
     float BR_uy = uy[cy1 * nx + cx1];
 
-<<<<<<< HEAD
-    float top = lerp_device(TL->uy, TR->uy, fxFrac);
-    float bottom = lerp_device(BL->uy, BR->uy, fxFrac);
-=======
     float top = lerp_device(TL_uy, TR_uy, fxFrac);
     float bottom = lerp_device(BL_uy, BR_uy, fxFrac);
->>>>>>> ba10a1acac661d9a0ec67a4e4bd525bb2f42d04f
 
     return lerp_device(top, bottom, fyFrac);
 }
@@ -152,13 +129,8 @@ __global__ void Snap2ColorFrame_Kernel(const float* d_ux, const float* d_uy,
     }
 
     // Interpolate velocities
-<<<<<<< HEAD
-    float ux = InterpolateUX_Device(d_cells, nx, ny, i, j, scalingFactor);
-    float uy = InterpolateUY_Device(d_cells, nx, ny, i, j, scalingFactor);
-=======
     float ux = InterpolateUX_Device(d_ux, nx, ny, i, j, scalingFactor);
     float uy = InterpolateUY_Device(d_uy, nx, ny, i, j, scalingFactor);
->>>>>>> ba10a1acac661d9a0ec67a4e4bd525bb2f42d04f
 
     // Convert to color
     Color_t color = VelocityColor_Device(ux, uy);
