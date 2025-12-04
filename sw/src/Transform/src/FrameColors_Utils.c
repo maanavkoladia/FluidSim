@@ -36,6 +36,7 @@ transform_err_t TransForm_ColorFrameYeild(Render_Frame_Colors_t* pFrame) {
     ASSERT_COMMON_NOT_NULL(pFrame->colors);
     free(pFrame->colors);
     free(pFrame);
+    return TRANSFORM_SUCCESS;
 }
 
 static inline int IsSolidCell(SimSnap_t* pSnap, uint64_t fx, uint64_t fy, uint64_t scalingFactor) {
@@ -49,7 +50,8 @@ static inline int IsSolidCell(SimSnap_t* pSnap, uint64_t fx, uint64_t fy, uint64
     if (cx >= pSnap->nx) cx = pSnap->nx - 1;
     if (cy >= pSnap->ny) cy = pSnap->ny - 1;
 
-    return pSnap->cells[cx][cy].type == SOLID;
+    // Access flattened array: index = cy * nx + cx
+    return pSnap->type[cy * pSnap->nx + cx] == SOLID;
 }
 
 static inline double lerp(double a, double b, double t) {
@@ -86,14 +88,15 @@ static inline double InterpolateUX(SimSnap_t* pSnap, uint64_t fx, uint64_t fy,
     //   TL (cx,  cy)     TR (cx1, cy)
     //   BL (cx,  cy1)    BR (cx1, cy1)
     //
-    Cell_t* TL = &pSnap->cells[cx][cy];
-    Cell_t* TR = &pSnap->cells[cx1][cy];
-    Cell_t* BL = &pSnap->cells[cx][cy1];
-    Cell_t* BR = &pSnap->cells[cx1][cy1];
+    // For flattened array: index = row * nx + col = cy * nx + cx
+    float TL_ux = pSnap->ux[cy * nx + cx];
+    float TR_ux = pSnap->ux[cy * nx + cx1];
+    float BL_ux = pSnap->ux[cy1 * nx + cx];
+    float BR_ux = pSnap->ux[cy1 * nx + cx1];
 
     // Interpolate horizontally between TL->TR and BL->BR.
-    double top = lerp(TL->ux, TR->ux, fxFrac);
-    double bottom = lerp(BL->ux, BR->ux, fxFrac);
+    double top = lerp(TL_ux, TR_ux, fxFrac);
+    double bottom = lerp(BL_ux, BR_ux, fxFrac);
 
     // Interpolate vertically between the two horizontal results.
     return lerp(top, bottom, fyFrac);
@@ -126,14 +129,15 @@ static inline double InterpolateUY(SimSnap_t* pSnap, uint64_t fx, uint64_t fy,
     //   TL (cx,  cy)     TR (cx1, cy)
     //   BL (cx,  cy1)    BR (cx1, cy1)
     //
-    Cell_t* TL = &pSnap->cells[cx][cy];
-    Cell_t* TR = &pSnap->cells[cx1][cy];
-    Cell_t* BL = &pSnap->cells[cx][cy1];
-    Cell_t* BR = &pSnap->cells[cx1][cy1];
+    // For flattened array: index = row * nx + col = cy * nx + cx
+    float TL_uy = pSnap->uy[cy * nx + cx];
+    float TR_uy = pSnap->uy[cy * nx + cx1];
+    float BL_uy = pSnap->uy[cy1 * nx + cx];
+    float BR_uy = pSnap->uy[cy1 * nx + cx1];
 
     // Horizontal interpolation of UY along top and bottom rows.
-    double top = lerp(TL->uy, TR->uy, fxFrac);
-    double bottom = lerp(BL->uy, BR->uy, fxFrac);
+    double top = lerp(TL_uy, TR_uy, fxFrac);
+    double bottom = lerp(BL_uy, BR_uy, fxFrac);
 
     // Vertical interpolation between the two results.
     return lerp(top, bottom, fyFrac);

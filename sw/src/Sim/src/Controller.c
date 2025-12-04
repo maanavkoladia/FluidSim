@@ -91,10 +91,10 @@ Cell_t** CreateCellsBuffer(uint64_t nx, uint64_t ny) {
     }
     return return_val;
 }
-double* FlattenUX(Cell_t** cells, uint64_t nx, uint64_t ny) {
+float* FlattenUX(Cell_t** cells, uint64_t nx, uint64_t ny) {
     assert(cells);
 
-    double* ux = (double*)malloc(sizeof(double) * nx * ny);
+    float* ux = (float*)malloc(sizeof(float) * nx * ny);
     assert(ux);
 
     for (uint64_t y = 0; y < ny; y++) {
@@ -104,10 +104,10 @@ double* FlattenUX(Cell_t** cells, uint64_t nx, uint64_t ny) {
     }
     return ux;
 }
-double* FlattenUY(Cell_t** cells, uint64_t nx, uint64_t ny) {
+float* FlattenUY(Cell_t** cells, uint64_t nx, uint64_t ny) {
     assert(cells);
 
-    double* uy = (double*)malloc(sizeof(double) * nx * ny);
+    float* uy = (float*)malloc(sizeof(float) * nx * ny);
     assert(uy);
 
     for (uint64_t y = 0; y < ny; y++) {
@@ -117,10 +117,10 @@ double* FlattenUY(Cell_t** cells, uint64_t nx, uint64_t ny) {
     }
     return uy;
 }
-double* FlattenPressure(Cell_t** cells, uint64_t nx, uint64_t ny) {
+float* FlattenPressure(Cell_t** cells, uint64_t nx, uint64_t ny) {
     assert(cells);
 
-    double* p = (double*)malloc(sizeof(double) * nx * ny);
+    float* p = (float*)malloc(sizeof(float) * nx * ny);
     assert(p);
 
     for (uint64_t y = 0; y < ny; y++) {
@@ -218,7 +218,7 @@ static inline sim_err_t InitSimState(sim_params_t* pParams, SimState_t** ppSimSt
     pSimStateBuf->PSolver_Interations = pParams->PSolver_Interations;
 
     // Initialize remaining fields not in sim_params_t
-    pSimStateBuf->totalTimeSteps = (double)pSimStateBuf->runTime.tv_sec / pSimStateBuf->dt;
+    pSimStateBuf->totalTimeSteps = (float)pSimStateBuf->runTime.tv_sec / pSimStateBuf->dt;
     pSimStateBuf->timeStepCount = 0;
     pSimStateBuf->cellBufInUse = USING_CELLS1;
     ASSERT_COMMON_POSIX(AllocateCells(pSimStateBuf), "Failed to A Llocate the cell matrix");
@@ -251,7 +251,7 @@ SimSnap_t* CreateSimSnap(SimState_t* state) {
 static void InjectVelocityCircleLeftEdge(SimState_t* sim,
                                          uint64_t radius, // in cells
                                          uint64_t offset, // cells from left edge
-                                         double ux)       // max rightward velocity
+                                         float ux)        // max rightward velocity
 {
     if (!sim) return;
 
@@ -262,49 +262,49 @@ static void InjectVelocityCircleLeftEdge(SimState_t* sim,
     uint64_t ny = sim->ny;
     if (nx == 0 || ny == 0) return;
 
-    double cx = (double)offset;
-    double cy = (double)(ny - 1) * 0.5;
+    float cx = (float)offset;
+    float cy = (float)(ny - 1) * 0.5;
 
-    double r = (double)radius;
+    float r = (float)radius;
 
     // Inner radius: full velocity
     // Outer radius: fully faded to 0
-    double r_inner = 0.6 * r; // tweak 0.5–0.8 to taste
-    double r_outer = r;
+    float r_inner = 0.6 * r; // tweak 0.5–0.8 to taste
+    float r_outer = r;
 
-    double r_outer2 = r_outer * r_outer;
+    float r_outer2 = r_outer * r_outer;
 
     uint64_t start_x = (offset > radius) ? (offset - radius) : 0;
     uint64_t end_x = (offset + radius < nx) ? (offset + radius) : nx - 1;
 
     for (uint64_t y = 0; y < ny; ++y) {
-        double dy = (double)y - cy;
+        float dy = (float)y - cy;
 
         for (uint64_t x = start_x; x <= end_x; ++x) {
-            double dx = (double)x - cx;
-            double dist2 = dx * dx + dy * dy;
+            float dx = (float)x - cx;
+            float dist2 = dx * dx + dy * dy;
 
             // Outside the outer radius: zero injection
             if (dist2 > r_outer2) {
                 continue;
             }
 
-            double dist = sqrt(dist2);
-            double weight;
+            float dist = sqrt(dist2);
+            float weight;
 
             if (dist <= r_inner) {
                 // Flat core: full strength
                 weight = 1.0;
             } else {
                 // Smooth falloff from r_inner to r_outer
-                double t = (dist - r_inner) / (r_outer - r_inner); // 0..1
+                float t = (dist - r_inner) / (r_outer - r_inner); // 0..1
                 if (t < 0.0) t = 0.0;
                 if (t > 1.0) t = 1.0;
 
                 // "smootherstep": 6t^5 - 15t^4 + 10t^3 (C^2 continuous)
-                double t2 = t * t;
-                double t3 = t2 * t;
-                double smoother = 6.0 * t3 * t2 - 15.0 * t2 * t2 + 10.0 * t3;
+                float t2 = t * t;
+                float t3 = t2 * t;
+                float smoother = 6.0 * t3 * t2 - 15.0 * t2 * t2 + 10.0 * t3;
 
                 // 1 at inner radius, 0 at outer radius
                 weight = 1.0 - smoother;
@@ -321,7 +321,7 @@ static void InjectVelocityCircleLeftEdge(SimState_t* sim,
 static void InjectVelocityRect(SimState_t* sim, uint64_t x0,
                                uint64_t y0,              // lower-left corner (inclusive)
                                uint64_t x1, uint64_t y1, // upper-right corner (exclusive)
-                               double ux, double uy      // velocity to inject
+                               float ux, float uy        // velocity to inject
 ) {
     if (!sim) return;
 
