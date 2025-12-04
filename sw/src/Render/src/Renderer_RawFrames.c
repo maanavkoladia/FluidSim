@@ -1,5 +1,5 @@
 #include "../../config.h"
-#ifndef OFF_SCREEN_RENDERING
+#ifndef ON_REMOTE
 #    include <sched.h>
 #    include <time.h>
 #    include <unistd.h>
