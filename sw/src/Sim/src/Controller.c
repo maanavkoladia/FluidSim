@@ -253,8 +253,6 @@ void CreateSolidSquare(SimState_t* pState, uint64_t dim) {
             pCells[i + midX][j + midY].ux = 0;
             pCells[i + midX][j + midY].uy = 0;
             pCells[i + midX][j + midY].p = 0;
-
-
         }
     }
 }
@@ -329,7 +327,7 @@ static void* Task_Controller(void* pvArgs) {
 
         ASSERT_COMMON_POSIX(RunOnePassOver(pSimState), "Failed on passover %lu", cycleCount);
         cycleCount++;
-        usleep(2);
+        // usleep(2);
     }
 
     // timestep,

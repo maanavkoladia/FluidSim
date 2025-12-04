@@ -2,7 +2,7 @@
 #include "Assert_Common.h"
 #include "ForLoop.h"
 #include "LOG.h"
-//#include "Render/inc/Helpers.h"
+// #include "Render/inc/Helpers.h"
 #include "Render/inc/Renderer.h"
 #include "Sim/inc/Sim.h"
 #include "Transform/inc/Transform.h"
@@ -17,7 +17,7 @@
 
 #include <time.h>
 
-#define SIM_RUNTIME_S (30)
+#define SIM_RUNTIME_S (60)
 
 sim_params_t simParams = {.nx = 64,
                           .ny = 48,
