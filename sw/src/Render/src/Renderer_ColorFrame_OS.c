@@ -23,7 +23,7 @@ static int frame_counter = 0;
  * When enabled the program will both write frames to frames/frame_00000.rgba ...
  * AND stream them to ffmpeg via a pipe to produce output.mp4 in realtime. */
 #ifndef ENABLE_FFMPEG_PIPE
-#    define ENABLE_FFMPEG_PIPE 1
+#    define ENABLE_FFMPEG_PIPE 0
 #endif
 
 static FILE* video_pipe = NULL;

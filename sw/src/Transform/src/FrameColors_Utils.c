@@ -1,11 +1,14 @@
-#include "FrameColors_Utils.h"
-#include "../../Render/inc/Renderer.h"
-#include "Assert_Common.h"
-#include "AtomicFlag.h"
-#include "ForLoop.h"
-#include <math.h>
-#include <pthread.h>
-#include <stdint.h>
+#include "../../config.h"
+#ifndef ON_REMOTE
+
+#    include "../../Render/inc/Renderer.h"
+#    include "Assert_Common.h"
+#    include "AtomicFlag.h"
+#    include "ForLoop.h"
+#    include "FrameColors_Utils.h"
+#    include <math.h>
+#    include <pthread.h>
+#    include <stdint.h>
 
 transform_err_t Init_ColorFrame(Render_Frame_Colors_t** pFrameOut, uint64_t w, uint64_t h) {
     ASSERT_COMMON_NOT_NULL(pFrameOut);
@@ -17,13 +20,13 @@ transform_err_t Init_ColorFrame(Render_Frame_Colors_t** pFrameOut, uint64_t w, u
     pFrameBuf->height = h;
     pFrameBuf->width = w;
     pFrameBuf->colors = (Color_t*)malloc(sizeof(Color_t) * w * h);
-#ifndef NDEBUG
+#    ifndef NDEBUG
     ASSERT_COMMON_ALLOC(pFrameBuf->colors);
-#else
+#    else
     if (!pFrameBuf->colors) {
         return TRANSFORM_ERR_SYSTEM;
     }
-#endif
+#    endif
     *pFrameOut = pFrameBuf;
     return TRANSFORM_SUCCESS;
 }
@@ -53,8 +56,7 @@ static inline double lerp(double a, double b, double t) {
     return a + (b - a) * t;
 }
 
-
-//Try to parallelize in CUDA once you get access to TACC
+// Try to parallelize in CUDA once you get access to TACC
 static inline double InterpolateUX(SimSnap_t* pSnap, uint64_t fx, uint64_t fy,
                                    uint64_t scalingFactor) {
     // Convert pixel coordinates (fx, fy) into continuous simulation space.
@@ -97,7 +99,7 @@ static inline double InterpolateUX(SimSnap_t* pSnap, uint64_t fx, uint64_t fy,
     return lerp(top, bottom, fyFrac);
 }
 
-//Try to parallelize in CUDA once you get access to TACC
+// Try to parallelize in CUDA once you get access to TACC
 static inline double InterpolateUY(SimSnap_t* pSnap, uint64_t fx, uint64_t fy,
                                    uint64_t scalingFactor) {
     // Convert pixel coordinates (fx, fy) into continuous simulation space.
@@ -153,7 +155,7 @@ static Color_t VelocityColor(double ux, double uy) {
     return c;
 }
 
-//Try to parallelize in CUDA once you get access to TACC
+// Try to parallelize in CUDA once you get access to TACC
 transform_err_t Snap2ColorFrame(SimSnap_t* pSnap, Render_Frame_Colors_t* pFrame) {
     ASSERT_COMMON_NOT_NULL(pSnap && pFrame && pFrame->colors);
     uint64_t scalingFactor = pFrame->width / pSnap->nx;
@@ -178,3 +180,5 @@ transform_err_t Snap2ColorFrame(SimSnap_t* pSnap, Render_Frame_Colors_t* pFrame)
 
     return TRANSFORM_SUCCESS;
 }
+
+#endif
