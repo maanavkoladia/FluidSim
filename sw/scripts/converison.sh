@@ -3,9 +3,10 @@
 # Usage: ./frames2Vid.sh <frame_dir> [width height framerate]
 
 DIR=$1
-WIDTH=${2:-480}
-HEIGHT=${3:-480}
-FPS=${4:-100}   # optional framerate
+FILEOUT=${2:-output.mp4}
+WIDTH=${3:-480}
+HEIGHT=${4:-480}
+FPS=${5:-100}   # optional framerate
 
 if [ -z "$DIR" ]; then
     echo "Usage: $0 <frame_dir> [width height framerate]"
@@ -31,7 +32,7 @@ done
 echo "PNG conversion done."
 
 # --- Convert PNGs to MP4 ---
-OUT="${DIR}.mp4"
+OUT="${FILEOUT}.mp4"
 echo "Converting PNGs → MP4: $OUT at ${WIDTH}x${HEIGHT} @ ${FPS}fps"
 
 ffmpeg -y \
@@ -43,3 +44,5 @@ ffmpeg -y \
 
 echo "Done! Video created: $OUT"
 ls -lh "$OUT"
+
+
