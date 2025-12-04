@@ -20,9 +20,8 @@ LIB_DIR_MPS = mpsLibC
 LIB_MPS = $(LIB_DIR_MPS)/build/$(LIB_DIR_MPS).a
 
 # === Flags ===
-C_FLAGS = -Wextra -Wall -O0 -g3 -MMD -MP
+C_FLAGS = -Wextra -Wall -O0 -g3 -MMD -MP -std=c11
 LD_FLAGS = -lm -lpthread
-
 NVCC_FLAGS = -O2 -std=c++14 --expt-extended-lambda -arch=sm_70
 
 # === Source files ===
