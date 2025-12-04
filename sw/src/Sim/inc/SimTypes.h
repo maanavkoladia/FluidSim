@@ -12,10 +12,10 @@ typedef enum {
 
 typedef struct {
     uint64_t nx, ny; // num of cells
-    double dt;
-    double p_density;
-    double w; // phtosical width of cell
-    double overrelaxation_const;
+    float dt;
+    float p_density;
+    float w; // phtosical width of cell
+    float overrelaxation_const;
     uint64_t PSolver_Interations;
     struct timespec runTime;
     uint64_t totalTimeSteps; // numver of iterations, if INT MAX, then inf
