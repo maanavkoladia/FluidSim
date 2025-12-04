@@ -32,6 +32,9 @@ static inline unsigned char float_to_byte(float f) {
 static void write_frame_raw_to_ffmpeg(Render_Frame_Colors_t* pFrame) {
     ASSERT_COMMON_NOT_NULL(pFrame && pFrame->colors);
 
+    // Ensure frames/ directory exists
+    system("mkdir -p frames");
+
     // Open pipe to ffmpeg on first frame
     if (video_pipe == NULL) {
         char cmd[512];
@@ -59,16 +62,27 @@ static void write_frame_raw_to_ffmpeg(Render_Frame_Colors_t* pFrame) {
         byte_buffer[i * 4 + 3] = float_to_byte(c->a);
     }
 
-    // Write to ffmpeg
-    size_t written = fwrite(byte_buffer, 1, num_pixels * 4, video_pipe);
+    // --- WRITE TO DISK ---
+    char filename[256];
+    snprintf(filename, sizeof(filename), "frames/frame_%05d.rgba", frame_counter);
+    FILE* f = fopen(filename, "wb");
+    if (f) {
+        fwrite(byte_buffer, 1, num_pixels * 4, f);
+        fclose(f);
+    } else {
+        fprintf(stderr, "ERROR: Cannot write frame to %s\n", filename);
+    }
 
+    // --- WRITE TO FFmpeg PIPE ---
+    size_t written = fwrite(byte_buffer, 1, num_pixels * 4, video_pipe);
     if (written != num_pixels * 4) {
-        fprintf(stderr, "WARNING: Frame %d - wrote %zu/%zu bytes\n", frame_counter, written,
-                num_pixels * 4);
+        fprintf(stderr, "WARNING: Frame %d - wrote %zu/%zu bytes to FFmpeg\n", frame_counter,
+                written, num_pixels * 4);
     }
 
     fflush(video_pipe);
     free(byte_buffer);
+    frame_counter++;
 }
 
 // ----------------------------------------
