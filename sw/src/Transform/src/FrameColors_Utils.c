@@ -1,6 +1,6 @@
 #include "../../config.h"
-#ifndef ON_REMOTE
 
+#ifndef ON_REMOTE
 #    include "../../Render/inc/Renderer.h"
 #    include "Assert_Common.h"
 #    include "AtomicFlag.h"

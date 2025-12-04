@@ -1,39 +1,40 @@
+
 #include "../../config.h"
+#include "FrameColors_Utils.h"
 #ifdef ON_REMOTE
 
 #    include "../../Render/inc/Renderer.h"
 #    include "../../Sim/inc/Sim.h"
-#    include "FrameColors_Utils.h"
+#    include "Assert_Common.h"
 #    include <cuda_runtime.h>
-#    include <device_launch_parameters.h>
 #    include <math.h>
 #    include <stdint.h>
 
 // Flattened cell structure for GPU (since 2D arrays aren't GPU-friendly)
 struct FlattenedCell {
-    double ux;
-    double uy;
-    double p;
+    float ux;
+    float uy;
+    float p;
     int type;
     uint64_t fluidNeighbors;
 };
 
 // Device function: Linear interpolation
-__device__ inline double lerp_device(double a, double b, double t) {
+__device__ inline float lerp_device(float a, float b, float t) {
     return a + (b - a) * t;
 }
 
 // Device function: Interpolate UX
-__device__ inline double InterpolateUX_Device(const FlattenedCell* cells, uint64_t nx, uint64_t ny,
-                                              uint64_t fx, uint64_t fy, uint64_t scalingFactor) {
-    double simX = (double)fx / (double)scalingFactor;
-    double simY = (double)fy / (double)scalingFactor;
+__device__ inline float InterpolateUX_Device(const FlattenedCell* cells, uint64_t nx, uint64_t ny,
+                                             uint64_t fx, uint64_t fy, uint64_t scalingFactor) {
+    float simX = (float)fx / (float)scalingFactor;
+    float simY = (float)fy / (float)scalingFactor;
 
     uint64_t cx = (uint64_t)simX;
     uint64_t cy = (uint64_t)simY;
 
-    double fxFrac = simX - (double)cx;
-    double fyFrac = simY - (double)cy;
+    float fxFrac = simX - (float)cx;
+    float fyFrac = simY - (float)cy;
 
     uint64_t cx1 = (cx + 1 < nx) ? cx + 1 : cx;
     uint64_t cy1 = (cy + 1 < ny) ? cy + 1 : cy;
@@ -44,23 +45,23 @@ __device__ inline double InterpolateUX_Device(const FlattenedCell* cells, uint64
     const FlattenedCell* BL = &cells[cy1 * nx + cx];
     const FlattenedCell* BR = &cells[cy1 * nx + cx1];
 
-    double top = lerp_device(TL->ux, TR->ux, fxFrac);
-    double bottom = lerp_device(BL->ux, BR->ux, fxFrac);
+    float top = lerp_device(TL->ux, TR->ux, fxFrac);
+    float bottom = lerp_device(BL->ux, BR->ux, fxFrac);
 
     return lerp_device(top, bottom, fyFrac);
 }
 
 // Device function: Interpolate UY
-__device__ inline double InterpolateUY_Device(const FlattenedCell* cells, uint64_t nx, uint64_t ny,
-                                              uint64_t fx, uint64_t fy, uint64_t scalingFactor) {
-    double simX = (double)fx / (double)scalingFactor;
-    double simY = (double)fy / (double)scalingFactor;
+__device__ inline float InterpolateUY_Device(const FlattenedCell* cells, uint64_t nx, uint64_t ny,
+                                             uint64_t fx, uint64_t fy, uint64_t scalingFactor) {
+    float simX = (float)fx / (float)scalingFactor;
+    float simY = (float)fy / (float)scalingFactor;
 
     uint64_t cx = (uint64_t)simX;
     uint64_t cy = (uint64_t)simY;
 
-    double fxFrac = simX - (double)cx;
-    double fyFrac = simY - (double)cy;
+    float fxFrac = simX - (float)cx;
+    float fyFrac = simY - (float)cy;
 
     uint64_t nx_local = nx;
     uint64_t ny_local = ny;
@@ -72,14 +73,14 @@ __device__ inline double InterpolateUY_Device(const FlattenedCell* cells, uint64
     const FlattenedCell* BL = &cells[cy1 * nx + cx];
     const FlattenedCell* BR = &cells[cy1 * nx + cx1];
 
-    double top = lerp_device(TL->uy, TR->uy, fxFrac);
-    double bottom = lerp_device(BL->uy, BR->uy, fxFrac);
+    float top = lerp_device(TL->uy, TR->uy, fxFrac);
+    float bottom = lerp_device(BL->uy, BR->uy, fxFrac);
 
     return lerp_device(top, bottom, fyFrac);
 }
 
 // Device function: Velocity to Color mapping
-__device__ inline Color_t VelocityColor_Device(double ux, double uy) {
+__device__ inline Color_t VelocityColor_Device(float ux, float uy) {
     float speed = sqrtf((float)(ux * ux + uy * uy));
     float t = fminf(speed * 0.1f, 1.0f);
 
@@ -105,8 +106,8 @@ __global__ void Snap2ColorFrame_Kernel(const FlattenedCell* d_cells, uint64_t nx
     }
 
     // Interpolate velocities
-    double ux = InterpolateUX_Device(d_cells, nx, ny, i, j, scalingFactor);
-    double uy = InterpolateUY_Device(d_cells, nx, ny, i, j, scalingFactor);
+    float ux = InterpolateUX_Device(d_cells, nx, ny, i, j, scalingFactor);
+    float uy = InterpolateUY_Device(d_cells, nx, ny, i, j, scalingFactor);
 
     // Convert to color
     Color_t color = VelocityColor_Device(ux, uy);
@@ -213,6 +214,35 @@ transform_err_t Snap2ColorFrame(SimSnap_t* pSnap, Render_Frame_Colors_t* pFrame)
     cudaFree(d_colors);
     free(h_cells);
 
+    return TRANSFORM_SUCCESS;
+}
+
+transform_err_t Init_ColorFrame(Render_Frame_Colors_t** pFrameOut, uint64_t w, uint64_t h) {
+    ASSERT_COMMON_NOT_NULL(pFrameOut);
+    ASSERT_COMMON(w == RENDER_WINDOW_WIDTH, "Got invalid Color Fram Height");
+    ASSERT_COMMON(h == RENDER_WINDOW_HEIGHT, "Got invalid Color Fram Width");
+    Render_Frame_Colors_t* pFrameBuf =
+        (Render_Frame_Colors_t*)malloc(sizeof(Render_Frame_Colors_t));
+
+    pFrameBuf->height = h;
+    pFrameBuf->width = w;
+    pFrameBuf->colors = (Color_t*)malloc(sizeof(Color_t) * w * h);
+#    ifndef NDEBUG
+    ASSERT_COMMON_ALLOC(pFrameBuf->colors);
+#    else
+    if (!pFrameBuf->colors) {
+        return TRANSFORM_ERR_SYSTEM;
+    }
+#    endif
+    *pFrameOut = pFrameBuf;
+    return TRANSFORM_SUCCESS;
+}
+
+transform_err_t TransForm_ColorFrameYeild(Render_Frame_Colors_t* pFrame) {
+    ASSERT_COMMON_NOT_NULL(pFrame);
+    ASSERT_COMMON_NOT_NULL(pFrame->colors);
+    free(pFrame->colors);
+    free(pFrame);
     return TRANSFORM_SUCCESS;
 }
 

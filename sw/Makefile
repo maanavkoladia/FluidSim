@@ -1,5 +1,5 @@
 # === Configuration ===
-ON_REMOTE := false
+ON_REMOTE := true
 
 PROJECT = FluidSim
 BUILD_DIR = build
@@ -9,19 +9,23 @@ OS_TYPE := $(shell uname -s)
 
 CC=gcc
 NVCC=nvcc
-# Default compiler
-ifeq ($(ON_REMOTE),true)
-    LIB_DIR_CK = ./lib/ck/build/lib
-    LIB_CK = $(LIB_DIR_CK)/libck.a
-endif
-
-LIB_DIR_MPS = mpsLibC
-LIB_MPS = $(LIB_DIR_MPS)/build/$(LIB_DIR_MPS).a
 
 # === Flags ===
 C_FLAGS = -Wextra -Wall -O0 -g3 -MMD -MP
 LD_FLAGS = -lm -lpthread
 NVCC_FLAGS = -O2 -std=c++14 --expt-extended-lambda -arch=sm_70
+C_FLAGS = $(NVCC_FLAGS)
+
+# Default compiler
+ifeq ($(ON_REMOTE),true)
+    LIB_DIR_CK = ./lib/ck/build/lib
+    LIB_CK = $(LIB_DIR_CK)/libck.a
+	CC=$(NVCC)
+	C_FLAGS = $(NVCC_FLAGS)
+endif
+
+LIB_DIR_MPS = mpsLibC
+LIB_MPS = $(LIB_DIR_MPS)/build/$(LIB_DIR_MPS).a
 
 # === Source files ===
 SRC_C_FILES = \

@@ -11,4 +11,4 @@
 #define RENDER_WINDOW_HEIGHT (480)
 #define RENDER_WINDOW_WIDTH (480)
 
-// #define ON_REMOTE
+#define ON_REMOTE
