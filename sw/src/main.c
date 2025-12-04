@@ -19,13 +19,13 @@
 
 #define SIM_RUNTIME_S (60)
 
-sim_params_t simParams = {.nx = 64 * 2,
-                          .ny = 48 * 2,
+sim_params_t simParams = {.nx = 64 * 3,
+                          .ny = 48 * 3,
                           .dt = 0.01,                  // simulation timestep in seconds
                           .p_density = 1.0,            // fluid density
-                          .w = 0.06,                    // some simulation weight parameter
-                          .overrelaxation_const = 1.7, // typical SOR relaxation factor
-                          .PSolver_Interations = 15,    // number of iterations for pressure solver
+                          .w = 0.02,                    // some simulation weight parameter
+                          .overrelaxation_const = 1.8, // typical SOR relaxation factor
+                          .PSolver_Interations = 30,    // number of iterations for pressure solver
                           .runTime = {0, 0},           // initialize to 0
                           .advectionScheme = SEMI_LAGRANGIAN,
                           .PsolverScene = JACOBI};
