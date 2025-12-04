@@ -19,8 +19,8 @@
 
 #define SIM_RUNTIME_S (60)
 
-sim_params_t simParams = {.nx = 48 * 3,
-                          .ny = 48 * 3,
+sim_params_t simParams = {.nx = 48,
+                          .ny = 48,
                           .dt = 0.01,                  // simulation timestep in seconds
                           .p_density = 1.0,            // fluid density
                           .w = 0.015,                  // some simulation weight parameter
