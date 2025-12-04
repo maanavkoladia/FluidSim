@@ -47,6 +47,31 @@ ifeq ($(OS_TYPE),Linux)
 LD_FLAGS += -lGL
 endif
 
+USE_CUDA ?= 0
+
+# Add CUDA compiler and flags
+ifeq ($(USE_CUDA),1)
+    NVCC = nvcc
+    NVCC_FLAGS = -arch=sm_70 -O3 -Xcompiler -fPIC
+    CUDA_SRCS = src/FrameColors_Utils.cu
+    CUDA_OBJS = $(CUDA_SRCS:.cu=.o)
+    C_FLAGS += -DUSE_CUDA
+endif
+
+# Add CUDA objects to OBJS
+OBJS += $(CUDA_OBJS)
+
+# Add CUDA compilation rule
+ifeq ($(USE_CUDA),1)
+%.o: %.cu
+	$(NVCC) $(NVCC_FLAGS) -I$(INC_DIR) -I../../Render/inc -I../../Sim/inc -c $< -o $@
+endif
+
+# Add CUDA libraries to linker
+ifeq ($(USE_CUDA),1)
+    LD_FLAGS += -lcudart
+endif
+
 .PHONY: all clean
 
 all: $(TARGET)
