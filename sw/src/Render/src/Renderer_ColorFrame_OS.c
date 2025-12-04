@@ -13,7 +13,6 @@
 
 static LF_Fifo_t* pColorFrameInFifo = NULL;
 static int frame_counter = 0;
-static FILE* video_pipe = NULL;
 
 #ifdef OFF_SCREEN_RENDERING
 
@@ -27,7 +26,7 @@ static inline unsigned char float_to_byte(float f) {
 }
 
 // ----------------------------------------
-// Raw RGBA - pipe directly to ffmpeg
+// Write raw RGBA to file
 // ----------------------------------------
 static void write_frame_raw_to_ffmpeg(Render_Frame_Colors_t* pFrame) {
     ASSERT_COMMON_NOT_NULL(pFrame && pFrame->colors);
@@ -99,7 +98,7 @@ render_err_t Render_ColorFrame_Process(void) {
     ASSERT_COMMON_NOT_NULL(pFrame);
 
     // Write frame
-    write_frame_raw_to_ffmpeg(pFrame);
+    write_frame_raw_to_file(pFrame);
     frame_counter++;
 
     // Return frame to transform service
@@ -125,20 +124,22 @@ render_err_t Render_ColorFramesProcessing_Init(void) {
                         "Failed to init frame FIFO");
 
     frame_counter = 0;
-    video_pipe = NULL;
 
-    LOG("Renderer: Color Frames Init Success (Float->Byte conversion, Raw RGBA -> FFmpeg)");
+    // Create frames directory
+    system("mkdir -p frames");
+
+    LOG("Renderer: Color Frames Init Success (Writing raw RGBA files to frames/)");
     return RENDER_SUCCESS;
 }
 
 render_err_t Render_ColorFramesProcessing_Dtr(void) {
-    if (video_pipe) {
-        pclose(video_pipe);
-        video_pipe = NULL;
-        LOG("Closed ffmpeg pipe - wrote %d frames to output.mp4", frame_counter);
-    }
-
     ASSERT_COMMON_POSIX(LF_Fifo_Dtr(pColorFrameInFifo), "Failed to DTR FIFO");
+
+    LOG("Wrote %d raw RGBA frames to frames/ directory", frame_counter);
+    LOG("Convert to video with:");
+    LOG("  ffmpeg -f rawvideo -pixel_format rgba -video_size %dx%d -framerate 60 -i "
+        "frames/frame_%%05d.rgba -c:v libx264 -preset fast -crf 18 output.mp4",
+        RENDER_WINDOW_WIDTH, RENDER_WINDOW_HEIGHT);
 
     return RENDER_SUCCESS;
 }
