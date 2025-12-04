@@ -1,25 +1,29 @@
-#include "Renderer_Display.h"
-#include "Assert_Common.h"
-#include "AtomicFlag.h"
-#include "LOG.h"
-#include "unistd.h"
-#include <GLFW/glfw3.h>
-#include <errno.h>
-#include <pthread.h>
-#include <sched.h>
-#include <time.h>
 
-#ifdef DISPLAY_COLORS
-#    include "Renderer_ColorFrame.h"
-#else
-#    include "Renderer_RawFrames.h"
-#endif
+#include "../../config.h"
+#ifndef ON_REMOTE
 
-#if defined(__APPLE__)
-#    include <OpenGL/gl.h>
-#elif defined(__linux__)
-#    include <GL/gl.h>
-#endif
+#    include "Assert_Common.h"
+#    include "AtomicFlag.h"
+#    include "LOG.h"
+#    include "Renderer_Display.h"
+#    include "unistd.h"
+#    include <GLFW/glfw3.h>
+#    include <errno.h>
+#    include <pthread.h>
+#    include <sched.h>
+#    include <time.h>
+
+#    ifdef DISPLAY_COLORS
+#        include "Renderer_ColorFrame.h"
+#    else
+#        include "Renderer_RawFrames.h"
+#    endif
+
+#    if defined(__APPLE__)
+#        include <OpenGL/gl.h>
+#    elif defined(__linux__)
+#        include <GL/gl.h>
+#    endif
 
 static AtomicFlag_t killFlag;
 static GLFWwindow* gWindow = NULL;
@@ -29,11 +33,11 @@ static pthread_t renderer_main_th;
 
 static void Render_Draw(void) {
 
-#ifdef DISPLAY_COLORS
+#    ifdef DISPLAY_COLORS
     Render_ColorFrame_Process();
-#else
+#    else
     Render_RawFrame_Process();
-#endif
+#    endif
 }
 
 static int Render_ShouldClose(void) {
@@ -95,24 +99,24 @@ static void* Task_Renderer_Display(void* pvArgs) {
     return NULL;
 }
 
-#if defined(__APPLE__)
+#    if defined(__APPLE__)
 render_err_t DisplayService_Init(void) {
     LOG("Render Starting Up");
     AtomicFlag_Clear(&killFlag);
     // create the sim snap fifo
     // LF_Fifo_Init(&frameInFifo, FRAME_IN_FIFO_SIZE);
 
-#    ifdef DISPLAY_COLORS
+#        ifdef DISPLAY_COLORS
     Render_ColorFramesProcessing_Init();
-#    else
+#        else
     Render_RawFrameProcessing_Init();
-#    endif
+#        endif
     Task_Renderer_Display(NULL);
     LOG("Renderer Init Success");
     return RENDER_SUCCESS;
 }
 
-#else
+#    else
 
 render_err_t DisplayService_Init(void) {
     LOG("Render Starting Up");
@@ -120,11 +124,11 @@ render_err_t DisplayService_Init(void) {
     // create the sim snap fifo
     // LF_Fifo_Init(&frameInFifo, FRAME_IN_FIFO_SIZE);
 
-#    ifdef DISPLAY_COLORS
+#        ifdef DISPLAY_COLORS
     Render_ColorFramesProcessing_Init();
-#    else
+#        else
     Render_RawFrameProcessing_Init();
-#    endif
+#        endif
 
     ASSERT_COMMON_POSIX(pthread_create(&renderer_main_th, NULL, Task_Renderer_Display, NULL),
                         "Faield to inti the redernder thread");
@@ -132,16 +136,16 @@ render_err_t DisplayService_Init(void) {
     return RENDER_SUCCESS;
 }
 
-#endif
+#    endif
 
 render_err_t DisplayService_Dtr(void) {
     AtomicFlag_Set(&killFlag);
     pthread_join(renderer_main_th, NULL);
-#ifdef DISPLAY_COLORS
+#    ifdef DISPLAY_COLORS
     Render_ColorFramesProcessing_Dtr();
-#else
+#    else
     Render_RawFramesProcessing_Dtr();
-#endif
+#    endif
     LOG("Render thread exited");
     ASSERT_COMMON(gWindow, "Trying to destroy NULL window");
     glfwDestroyWindow(gWindow);
@@ -150,3 +154,4 @@ render_err_t DisplayService_Dtr(void) {
     LOG("Renderer Dtr success");
     return RENDER_SUCCESS;
 }
+#endif

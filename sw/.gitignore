@@ -15,3 +15,8 @@ compile_commands.json
 frames/
 
 *.mp4
+
+lib/
+
+frames_png/
+

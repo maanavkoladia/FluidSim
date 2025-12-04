@@ -1,87 +1,98 @@
+ON_REMOTE:=false
+
 PROJECT = FluidSim
 BUILD_DIR = build
 TARGET = $(PROJECT).elf
-
 CC = gcc
+LIB_DIR_MPS = mpsLibC
+LIB_MPS = $(LIB_DIR_MPS)/build/$(LIB_DIR_MPS).a
 
-LIB_DIR = mpsLibC
-LIB = $(LIB_DIR)/build/$(LIB_DIR).a 
-
-
+ifeq ($(ON_REMOTE),true) 
+LIB_DIR_CK = ./lib/ck/build/lib
+LIB_CK = $(LIB_DIR_CK)/libck.a
+endif
 
 
 OS_TYPE := $(shell uname -s)
 
 C_FLAGS = \
-		 -Wextra	\
-		 -Wall	\
-		 -O0 	\
-		 -g3 	\
-		 -MMD \
-		 -MP
+	-Wextra \
+	-Wall \
+	-O0 \
+	-g3 \
+	-MMD \
+	-MP
 
 LD_FLAGS = \
-		  -lm	\
-		  -lpthread	\
-		  -lglfw \
-		  -fsanitize=address \
+	-lm \
+	-lpthread \
 
 SRC_FILES = \
-			src/main.c	\
-			src/Sim/src/Sim.c \
-			src/Sim/src/Controller.c \
-			src/Sim/src/Advection.c	\
-			src/Sim/src/PressureSolver.c \
-			src/Sim/src/SimDebugUtils.c \
-			src/Transform/src/Transform.c \
-			src/Transform/src/FrameColors_Utils.c \
-			src/Transform/src/FrameRaw_Utils.c \
-			src/Transform/src/HelperUtils.c \
-			src/Render/src/Renderer.c	\
-			src/Render/src/Renderer_ColorFrame.c	\
-			src/Render/src/Renderer_RawFrames.c	\
-			src/Render/src/Renderer_OffScreen.c	\
-			src/Render/src/Renderer_Display.c	\
-		   
+	src/main.c \
+	src/Sim/src/Sim.c \
+	src/Sim/src/Controller.c \
+	src/Sim/src/Advection.c \
+	src/Sim/src/PressureSolver.c \
+	src/Sim/src/SimDebugUtils.c \
+	src/Transform/src/Transform.c \
+	src/Transform/src/FrameColors_Utils.c \
+	src/Transform/src/FrameRaw_Utils.c \
+	src/Transform/src/HelperUtils.c \
+	src/Render/src/Renderer.c \
+	src/Render/src/Renderer_ColorFrame.c \
+	src/Render/src/Renderer_RawFrames.c \
+	src/Render/src/Renderer_Display.c \
+	src/Render/src/Renderer_ColorFrame_OS.c
+
 INCLUDES = \
-		   -I$(LIB_DIR)/common	\
-		   -I$(LIB_DIR)/RingBuffer/PFifo	\
-		   -I$(LIB_DIR)/RingBuffer/LFfifo	\
+	-I$(LIB_DIR_MPS)/common \
+	-I$(LIB_DIR_MPS)/RingBuffer/PFifo \
+	-I$(LIB_DIR_MPS)/RingBuffer/LFfifo \
+	-I./lib/ck/build/include
 
 HDR_FILES = \
-		   src/config.h
-
+	src/config.h
 
 ifeq ($(OS_TYPE),Darwin)
-    LD_FLAGS += \
-				-framework OpenGL	\
-				-L/opt/homebrew/lib
-
-	C_FLAGS += \
-			   -I/opt/homebrew/include 
-
+LD_FLAGS += \
+	-framework OpenGL \
+	-L/opt/homebrew/lib
+C_FLAGS += \
+	-I/opt/homebrew/include
+SRC_FILES += \
+	src/Render/src/Renderer_OffScreen_Stub.c
 endif
 
 ifeq ($(OS_TYPE),Linux)
+
     LD_FLAGS += \
-				-lEGL 	\
-				-lGL	\
-				-lGLEW 	
+        -lEGL \
+        -lGL
+
+    SRC_FILES += \
+        src/Render/src/Renderer_OffScreen.c
+
+    ifeq ($(ON_REMOTE),false)
+        LD_FLAGS += \
+            -lglfw \
+            -lGLEW
+    endif
+
 endif
 
 OBJS = $(patsubst src/%.c,$(BUILD_DIR)/%.o,$(SRC_FILES))
 DEPS = $(OBJS:.o=.d)
 
-.PHONY : clean all
+.PHONY: clean all
 
 all: $(TARGET)
-	
-# Ensure library is built first
-$(LIB):
-	$(MAKE) -C $(LIB_DIR) all
 
-$(TARGET) : $(OBJS) $(LIB) | $(BUILD_DIR)
-	$(CC) -o $@ $(OBJS) $(LIB) $(LD_FLAGS) 
+# Ensure library is built first
+$(LIB_MPS):
+	$(MAKE) -C $(LIB_DIR_MPS) all
+
+$(TARGET): $(OBJS) $(LIB_MPS) $(LIB_CK) | $(BUILD_DIR)
+	$(CC) -o $@ $(OBJS) $(LIB_MPS) $(LIB_CK) $(LD_FLAGS)
 
 # Compile object files and generate dependency files
 $(BUILD_DIR)/%.o: src/%.c | $(BUILD_DIR)
@@ -94,7 +105,7 @@ $(BUILD_DIR)/%.o: src/%.c | $(BUILD_DIR)
 $(BUILD_DIR):
 	mkdir -p $@
 
-clean : 
+clean:
 	rm -rf ./$(BUILD_DIR)
 	rm -rf $(TARGET)
-	$(MAKE) -C $(LIB_DIR) clean
+	$(MAKE) -C $(LIB_DIR_MPS) clean

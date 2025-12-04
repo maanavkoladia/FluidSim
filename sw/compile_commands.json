@@ -11,25 +11,6 @@
       "-ImpsLibC/RingBuffer/LFfifo",
       "-c",
       "-o",
-      "build/Sim/src/Sim.o",
-      "src/Sim/src/Sim.c"
-    ],
-    "directory": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw",
-    "file": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/src/Sim/src/Sim.c",
-    "output": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/build/Sim/src/Sim.o"
-  },
-  {
-    "arguments": [
-      "/usr/bin/gcc",
-      "-Wextra",
-      "-Wall",
-      "-O0",
-      "-g3",
-      "-ImpsLibC/common",
-      "-ImpsLibC/RingBuffer/PFifo",
-      "-ImpsLibC/RingBuffer/LFfifo",
-      "-c",
-      "-o",
       "build/main.o",
       "src/main.c"
     ],
@@ -49,50 +30,12 @@
       "-ImpsLibC/RingBuffer/LFfifo",
       "-c",
       "-o",
-      "build/Sim/src/PressureSolver.o",
-      "src/Sim/src/PressureSolver.c"
+      "build/Sim/src/Sim.o",
+      "src/Sim/src/Sim.c"
     ],
     "directory": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw",
-    "file": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/src/Sim/src/PressureSolver.c",
-    "output": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/build/Sim/src/PressureSolver.o"
-  },
-  {
-    "arguments": [
-      "/usr/bin/gcc",
-      "-Wextra",
-      "-Wall",
-      "-O0",
-      "-g3",
-      "-ImpsLibC/common",
-      "-ImpsLibC/RingBuffer/PFifo",
-      "-ImpsLibC/RingBuffer/LFfifo",
-      "-c",
-      "-o",
-      "build/Transform/src/FrameColors_Utils.o",
-      "src/Transform/src/FrameColors_Utils.c"
-    ],
-    "directory": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw",
-    "file": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/src/Transform/src/FrameColors_Utils.c",
-    "output": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/build/Transform/src/FrameColors_Utils.o"
-  },
-  {
-    "arguments": [
-      "/usr/bin/gcc",
-      "-Wextra",
-      "-Wall",
-      "-O0",
-      "-g3",
-      "-ImpsLibC/common",
-      "-ImpsLibC/RingBuffer/PFifo",
-      "-ImpsLibC/RingBuffer/LFfifo",
-      "-c",
-      "-o",
-      "build/Transform/src/Transform.o",
-      "src/Transform/src/Transform.c"
-    ],
-    "directory": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw",
-    "file": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/src/Transform/src/Transform.c",
-    "output": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/build/Transform/src/Transform.o"
+    "file": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/src/Sim/src/Sim.c",
+    "output": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/build/Sim/src/Sim.o"
   },
   {
     "arguments": [
@@ -122,12 +65,31 @@
       "-I.",
       "-c",
       "-o",
-      "build/RingBuffer/PFifo/PFifo.o",
-      "RingBuffer/PFifo/PFifo.c"
+      "build/RingBuffer/LFfifo/LFfifo.o",
+      "RingBuffer/LFfifo/LFfifo.c"
     ],
     "directory": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/mpsLibC",
-    "file": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/mpsLibC/RingBuffer/PFifo/PFifo.c",
-    "output": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/mpsLibC/build/RingBuffer/PFifo/PFifo.o"
+    "file": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/mpsLibC/RingBuffer/LFfifo/LFfifo.c",
+    "output": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/mpsLibC/build/RingBuffer/LFfifo/LFfifo.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wextra",
+      "-Wall",
+      "-O0",
+      "-g3",
+      "-ImpsLibC/common",
+      "-ImpsLibC/RingBuffer/PFifo",
+      "-ImpsLibC/RingBuffer/LFfifo",
+      "-c",
+      "-o",
+      "build/Transform/src/Transform.o",
+      "src/Transform/src/Transform.c"
+    ],
+    "directory": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw",
+    "file": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/src/Transform/src/Transform.c",
+    "output": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/build/Transform/src/Transform.o"
   },
   {
     "arguments": [
@@ -173,12 +135,12 @@
       "-I.",
       "-c",
       "-o",
-      "build/RingBuffer/LFfifo/LFfifo.o",
-      "RingBuffer/LFfifo/LFfifo.c"
+      "build/RingBuffer/PFifo/PFifo.o",
+      "RingBuffer/PFifo/PFifo.c"
     ],
     "directory": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/mpsLibC",
-    "file": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/mpsLibC/RingBuffer/LFfifo/LFfifo.c",
-    "output": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/mpsLibC/build/RingBuffer/LFfifo/LFfifo.o"
+    "file": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/mpsLibC/RingBuffer/PFifo/PFifo.c",
+    "output": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/mpsLibC/build/RingBuffer/PFifo/PFifo.o"
   },
   {
     "arguments": [
@@ -192,31 +154,12 @@
       "-ImpsLibC/RingBuffer/LFfifo",
       "-c",
       "-o",
-      "build/Render/src/Renderer.o",
-      "src/Render/src/Renderer.c"
+      "build/Render/src/Renderer_ColorFrame_OS.o",
+      "src/Render/src/Renderer_ColorFrame_OS.c"
     ],
     "directory": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw",
-    "file": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/src/Render/src/Renderer.c",
-    "output": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/build/Render/src/Renderer.o"
-  },
-  {
-    "arguments": [
-      "/usr/bin/gcc",
-      "-Wextra",
-      "-Wall",
-      "-O0",
-      "-g3",
-      "-ImpsLibC/common",
-      "-ImpsLibC/RingBuffer/PFifo",
-      "-ImpsLibC/RingBuffer/LFfifo",
-      "-c",
-      "-o",
-      "build/Sim/src/SimDebugUtils.o",
-      "src/Sim/src/SimDebugUtils.c"
-    ],
-    "directory": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw",
-    "file": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/src/Sim/src/SimDebugUtils.c",
-    "output": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/build/Sim/src/SimDebugUtils.o"
+    "file": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/src/Render/src/Renderer_ColorFrame_OS.c",
+    "output": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/build/Render/src/Renderer_ColorFrame_OS.o"
   },
   {
     "arguments": [
@@ -249,11 +192,163 @@
       "-ImpsLibC/RingBuffer/LFfifo",
       "-c",
       "-o",
+      "build/Render/src/Renderer.o",
+      "src/Render/src/Renderer.c"
+    ],
+    "directory": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw",
+    "file": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/src/Render/src/Renderer.c",
+    "output": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/build/Render/src/Renderer.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wextra",
+      "-Wall",
+      "-O0",
+      "-g3",
+      "-ImpsLibC/common",
+      "-ImpsLibC/RingBuffer/PFifo",
+      "-ImpsLibC/RingBuffer/LFfifo",
+      "-c",
+      "-o",
+      "build/Render/src/Renderer_ColorFrame.o",
+      "src/Render/src/Renderer_ColorFrame.c"
+    ],
+    "directory": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw",
+    "file": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/src/Render/src/Renderer_ColorFrame.c",
+    "output": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/build/Render/src/Renderer_ColorFrame.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wextra",
+      "-Wall",
+      "-O0",
+      "-g3",
+      "-ImpsLibC/common",
+      "-ImpsLibC/RingBuffer/PFifo",
+      "-ImpsLibC/RingBuffer/LFfifo",
+      "-c",
+      "-o",
+      "build/Render/src/Renderer_Display.o",
+      "src/Render/src/Renderer_Display.c"
+    ],
+    "directory": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw",
+    "file": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/src/Render/src/Renderer_Display.c",
+    "output": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/build/Render/src/Renderer_Display.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wextra",
+      "-Wall",
+      "-O0",
+      "-g3",
+      "-ImpsLibC/common",
+      "-ImpsLibC/RingBuffer/PFifo",
+      "-ImpsLibC/RingBuffer/LFfifo",
+      "-c",
+      "-o",
       "build/Transform/src/FrameRaw_Utils.o",
       "src/Transform/src/FrameRaw_Utils.c"
     ],
     "directory": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw",
     "file": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/src/Transform/src/FrameRaw_Utils.c",
     "output": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/build/Transform/src/FrameRaw_Utils.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wextra",
+      "-Wall",
+      "-O0",
+      "-g3",
+      "-ImpsLibC/common",
+      "-ImpsLibC/RingBuffer/PFifo",
+      "-ImpsLibC/RingBuffer/LFfifo",
+      "-c",
+      "-o",
+      "build/Render/src/Renderer_OffScreen.o",
+      "src/Render/src/Renderer_OffScreen.c"
+    ],
+    "directory": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw",
+    "file": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/src/Render/src/Renderer_OffScreen.c",
+    "output": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/build/Render/src/Renderer_OffScreen.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wextra",
+      "-Wall",
+      "-O0",
+      "-g3",
+      "-ImpsLibC/common",
+      "-ImpsLibC/RingBuffer/PFifo",
+      "-ImpsLibC/RingBuffer/LFfifo",
+      "-c",
+      "-o",
+      "build/Sim/src/PressureSolver.o",
+      "src/Sim/src/PressureSolver.c"
+    ],
+    "directory": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw",
+    "file": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/src/Sim/src/PressureSolver.c",
+    "output": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/build/Sim/src/PressureSolver.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wextra",
+      "-Wall",
+      "-O0",
+      "-g3",
+      "-ImpsLibC/common",
+      "-ImpsLibC/RingBuffer/PFifo",
+      "-ImpsLibC/RingBuffer/LFfifo",
+      "-c",
+      "-o",
+      "build/Sim/src/SimDebugUtils.o",
+      "src/Sim/src/SimDebugUtils.c"
+    ],
+    "directory": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw",
+    "file": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/src/Sim/src/SimDebugUtils.c",
+    "output": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/build/Sim/src/SimDebugUtils.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wextra",
+      "-Wall",
+      "-O0",
+      "-g3",
+      "-ImpsLibC/common",
+      "-ImpsLibC/RingBuffer/PFifo",
+      "-ImpsLibC/RingBuffer/LFfifo",
+      "-c",
+      "-o",
+      "build/Render/src/Renderer_RawFrames.o",
+      "src/Render/src/Renderer_RawFrames.c"
+    ],
+    "directory": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw",
+    "file": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/src/Render/src/Renderer_RawFrames.c",
+    "output": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/build/Render/src/Renderer_RawFrames.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wextra",
+      "-Wall",
+      "-O0",
+      "-g3",
+      "-ImpsLibC/common",
+      "-ImpsLibC/RingBuffer/PFifo",
+      "-ImpsLibC/RingBuffer/LFfifo",
+      "-c",
+      "-o",
+      "build/Transform/src/FrameColors_Utils.o",
+      "src/Transform/src/FrameColors_Utils.c"
+    ],
+    "directory": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw",
+    "file": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/src/Transform/src/FrameColors_Utils.c",
+    "output": "/home/maanav/projects/school_projects/multithreading/FluidSim/sw/build/Transform/src/FrameColors_Utils.o"
   }
 ]

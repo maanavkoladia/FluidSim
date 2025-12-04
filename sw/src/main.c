@@ -57,10 +57,10 @@ int main(int argc, char** argv) {
     Render_Init();
 #    endif
 #else
-    FOR_LOOP_COMMON(i, SIM_RUNTIME_S) {
-        sleep(1);
-        LOG("Slept for %d sec", i);
-    }
+    // FOR_LOOP_COMMON(i, SIM_RUNTIME_S) {
+    sleep(SIM_RUNTIME_S);
+    // LOG("Slept for %d sec", i);
+    //}
 #endif
 
     LOG("Beggning tear down");

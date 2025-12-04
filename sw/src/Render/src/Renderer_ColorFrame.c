@@ -1,16 +1,17 @@
-#include <sched.h>
-#include <time.h>
-#include <unistd.h>
-#define GL_SILENCE_DEPRECATION
-#include "../../../mpsLibC/common/Assert_Common.h"
-#include "../../Transform/inc/Transform.h"
-#include "../inc/Renderer.h"
-#include "AtomicFlag.h"
-#include "LFfifo.h"
-#include "Renderer_ColorFrame.h"
-#include <GLFW/glfw3.h>
-#include <pthread.h>
-
+#include "../../config.h"
+#ifndef OFF_SCREEN_RENDERING
+#    include <sched.h>
+#    include <time.h>
+#    include <unistd.h>
+#    define GL_SILENCE_DEPRECATION
+#    include "../../Transform/inc/Transform.h"
+#    include "../inc/Renderer.h"
+#    include "Assert_Common.h"
+#    include "AtomicFlag.h"
+#    include "LFfifo.h"
+#    include "Renderer_ColorFrame.h"
+#    include <GLFW/glfw3.h>
+#    include <pthread.h>
 static LF_Fifo_t* pColorFrameInFifo = NULL;
 
 // -----------------------------------------------------------------------------
@@ -79,6 +80,7 @@ render_err_t Render_Send_Frame_Colors(Render_Frame_Colors_t* pFrameIn) {
 render_err_t Render_ColorFramesProcessing_Init(void) {
     ASSERT_COMMON_POSIX(LF_Fifo_Init(&pColorFrameInFifo, FRAME_IN_FIFO_SIZE),
                         "Failed to init the frame fifo");
+    LOG("Renderer: Color Frames Init Succes for On Screen rendering");
     return RENDER_SUCCESS;
 }
 
@@ -86,3 +88,5 @@ render_err_t Render_ColorFramesProcessing_Dtr(void) {
     ASSERT_COMMON_POSIX(LF_Fifo_Dtr(pColorFrameInFifo), "Faield to DTR fifo wft");
     return RENDER_SUCCESS;
 }
+
+#endif
