@@ -1,4 +1,4 @@
-ON_REMOTE:=false
+ON_REMOTE:=true
 
 PROJECT = FluidSim
 BUILD_DIR = build
