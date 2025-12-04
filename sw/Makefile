@@ -40,6 +40,8 @@ SRC_FILES = \
 			src/Render/src/Renderer.c	\
 			src/Render/src/Renderer_ColorFrame.c	\
 			src/Render/src/Renderer_RawFrames.c	\
+			src/Render/src/Renderer_OffScreen.c	\
+			src/Render/src/Renderer_Display.c	\
 		   
 INCLUDES = \
 		   -I$(LIB_DIR)/common	\
@@ -62,7 +64,9 @@ endif
 
 ifeq ($(OS_TYPE),Linux)
     LD_FLAGS += \
-				-lGL
+				-lEGL 	\
+				-lGL	\
+				-lGLEW 	
 endif
 
 OBJS = $(patsubst src/%.c,$(BUILD_DIR)/%.o,$(SRC_FILES))
