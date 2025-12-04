@@ -465,7 +465,7 @@ static void* Task_Controller(void* pvArgs) {
         #endif
 
         #ifdef ON_REMOTE
-        RunFluidStep_GPU(pSimState,gpu);
+        RunFluidStep_GPU(pSimState,&gpu);
         SimSnap_t* single_snap = CreateSimSnap(pSimState);
         while (Transform_SendNewSimSnap(single_snap) != TRANSFORM_SUCCESS) {
         }
