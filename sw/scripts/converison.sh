@@ -32,7 +32,7 @@ done
 echo "PNG conversion done."
 
 # --- Convert PNGs to MP4 ---
-OUT="${FILEOUT}.mp4"
+OUT="${FILEOUT}"
 echo "Converting PNGs → MP4: $OUT at ${WIDTH}x${HEIGHT} @ ${FPS}fps"
 
 ffmpeg -y \
