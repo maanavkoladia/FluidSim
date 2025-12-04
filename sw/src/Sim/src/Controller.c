@@ -14,7 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
+#include <assert.h>
 #define TASK_CONTROLLER_RET (NULL)
 
 typedef struct {
@@ -35,6 +35,12 @@ AtomicFlag_t killFlag;
     } while (0)
 
 void FreeCells(Cell_t** cells, uint64_t nx);
+
+
+
+static inline uint64_t FLAT_IDX(uint64_t x, uint64_t y, uint64_t nx) {
+    return y * nx + x;
+}
 
 // will free mem
 static inline void CopyInArgs(void* pvArgsIn, sim_params_t* pParamsOut) {
@@ -86,6 +92,59 @@ Cell_t** CreateCellsBuffer(uint64_t nx, uint64_t ny) {
         return_val[i] = malloc(sizeof(Cell_t) * ny);
     }
     return return_val;
+}
+double* FlattenUX(Cell_t** cells, uint64_t nx, uint64_t ny) {
+    assert(cells);
+
+    double* ux = (double*)malloc(sizeof(double) * nx * ny);
+    assert(ux);
+
+    for (uint64_t y = 0; y < ny; y++) {
+        for (uint64_t x = 0; x < nx; x++) {
+            ux[FLAT_IDX(x, y, nx)] = cells[x][y].ux;
+        }
+    }
+    return ux;
+}
+double* FlattenUY(Cell_t** cells, uint64_t nx, uint64_t ny) {
+    assert(cells);
+
+    double* uy = (double*)malloc(sizeof(double) * nx * ny);
+    assert(uy);
+
+    for (uint64_t y = 0; y < ny; y++) {
+        for (uint64_t x = 0; x < nx; x++) {
+            uy[FLAT_IDX(x, y, nx)] = cells[x][y].uy;
+        }
+    }
+    return uy;
+}
+double* FlattenPressure(Cell_t** cells, uint64_t nx, uint64_t ny) {
+    assert(cells);
+
+    double* p = (double*)malloc(sizeof(double) * nx * ny);
+    assert(p);
+
+    for (uint64_t y = 0; y < ny; y++) {
+        for (uint64_t x = 0; x < nx; x++) {
+            p[FLAT_IDX(x, y, nx)] = cells[x][y].p;
+        }
+    }
+    return p;
+}
+CellMaterial_t* FlattenType(Cell_t** cells, uint64_t nx, uint64_t ny) {
+    assert(cells);
+
+    CellMaterial_t* type =
+        (CellMaterial_t*)malloc(sizeof(CellMaterial_t) * nx * ny);
+    assert(type);
+
+    for (uint64_t y = 0; y < ny; y++) {
+        for (uint64_t x = 0; x < nx; x++) {
+            type[FLAT_IDX(x, y, nx)] = cells[x][y].type;
+        }
+    }
+    return type;
 }
 
 sim_err_t Sim_SimSnap_Yeild(SimSnap_t* pSnap) {

@@ -61,7 +61,10 @@ typedef struct {
 
 typedef struct {
     uint64_t nx, ny; // num of cells
-    Cell_t** cells;
+    double* ux;
+    double* uy;
+    double* p;
+    CellMaterial_t* type;
 } SimSnap_t;
 
 /* ================================================== */
