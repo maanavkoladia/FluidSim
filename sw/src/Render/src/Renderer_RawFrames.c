@@ -1,6 +1,5 @@
 #include "../../config.h"
 #ifndef ON_REMOTE
-#    include <sched.h>
 #    include <time.h>
 #    include <unistd.h>
 #    define GL_SILENCE_DEPRECATION

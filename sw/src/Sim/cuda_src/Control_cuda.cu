@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // gpu_fluid.cu (compile with nvcc)
 
 #include <cuda_runtime.h>
