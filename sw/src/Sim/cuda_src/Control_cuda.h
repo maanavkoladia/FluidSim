@@ -8,16 +8,16 @@
 typedef struct {
     int nx, ny;
 
-    // Device arrays (SoA, double precision)
-    double *d_pCurr, *d_pNext;
-    double *d_uxCurr, *d_uxNext;
-    double *d_uyCurr, *d_uyNext;
+    // Device arrays (SoA, float precision)
+    float *d_pCurr, *d_pNext;
+    float *d_uxCurr, *d_uxNext;
+    float *d_uyCurr, *d_uyNext;
     int    *d_cellType;
 
     // Host scratch buffers for packing/unpacking
-    double *h_p;
-    double *h_ux;
-    double *h_uy;
+    float *h_p;
+    float *h_ux;
+    float *h_uy;
     int    *h_cellType;
 
     bool initialized;
