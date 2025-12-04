@@ -7,7 +7,7 @@
 
 // Match your enum
 #ifndef SOLID
-#define SOLID 1
+#define SOLID 2
 #endif
 
 // ---------------------------------------------------------
