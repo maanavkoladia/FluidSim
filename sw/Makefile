@@ -61,6 +61,7 @@ ifeq ($(OS_TYPE),Linux)
         SRC_CUDA_FILES += \
             src/Transform/src/FrameColors_Utils_Device.cu \
             src/Sim/cuda_src/Advection_cuda.cu \
+            src/Sim/cuda_src/Control_cuda.cu \
             src/Sim/cuda_src/Pressure_cuda.cu
     else
         LD_FLAGS += -lglfw -lGLEW

@@ -1,12 +1,13 @@
 #include "Controller.h"
 #include "../../Transform/inc/Transform.h"
-#include "Sim.h"
 #include "Advection.h"
 #include "Assert_Common.h"
 #include "AtomicFlag.h"
+#include "Control_cuda.h"
 #include "ForLoop.h"
 #include "LOG.h"
 #include "PressureSolver.h"
+#include "Sim.h"
 #include "SimTypes.h"
 #include <assert.h>
 #include <math.h>
@@ -15,9 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "Control_cuda.h"
 #define TASK_CONTROLLER_RET (NULL)
-
 
 GPUFluidState gpu = {0};
 typedef struct {
@@ -133,6 +132,7 @@ float* FlattenPressure(Cell_t** cells, uint64_t nx, uint64_t ny) {
     }
     return p;
 }
+
 CellMaterial_t* FlattenType(Cell_t** cells, uint64_t nx, uint64_t ny) {
     assert(cells);
 
@@ -408,18 +408,16 @@ static void InjectVelocity_LeftEdge_ToRight(SimState_t* pState, velocity_t vel) 
     }
 }
 
-
-
 static sim_err_t RunOnePassOver(SimState_t* pSimState) {
     ASSERT_COMMON(pSimState, "Got a NULL Sim State");
-// run psolver
-// LOG("Starting PressureSolver Passover");
+    // run psolver
+    // LOG("Starting PressureSolver Passover");
     ASSERT_COMMON_POSIX(RunPressureSolver(pSimState), "Something in pSolve shat itself");
     // run adection
     // Send SimSnap frame
-    
+
     ASSERT_COMMON_POSIX(AdvectVelocity(pSimState), "Something in pSolve shat itself");
-SimSnap_t* single_snap = CreateSimSnap(pSimState);
+    SimSnap_t* single_snap = CreateSimSnap(pSimState);
     while (Transform_SendNewSimSnap(single_snap) != TRANSFORM_SUCCESS) {
     }
     // Sim_SimSnap_Yeild(single_snap);
@@ -446,8 +444,8 @@ static void* Task_Controller(void* pvArgs) {
 
     // PrintCellVel(pSimState);
     // CreateSolidSquare(pSimState, 4);
-    // CreateSolidCircle(pSimState,8);
-    
+    CreateSolidCircle(pSimState, 13);
+
     while (1) {
         if (AtomicFlag_GetStatus(&killFlag) == KILL_FLAG_SET) {
             FreeSimState(pSimState);
@@ -455,21 +453,21 @@ static void* Task_Controller(void* pvArgs) {
         }
         // InjectVelocityCenter(pSimState);
         // InjectVelocity_LeftEdge_ToRight(pSimState, 1);
-        uint64_t radius = 10;                                    // tweak as needed, in cells
-        InjectVelocityCircleLeftEdge(pSimState, radius, 7, 1.0); // strong rightward inlet
+        uint64_t radius = 13;                                     // tweak as needed, in cells
+        InjectVelocityCircleLeftEdge(pSimState, radius, 13, 1.2); // strong rightward inlet
 
-        // PrintCellVel(pSimState);
-        //  LOG("Ran TimeStep: %lu", cycleCount);
-        #ifndef ON_REMOTE
+// PrintCellVel(pSimState);
+//  LOG("Ran TimeStep: %lu", cycleCount);
+#ifndef ON_REMOTE
         ASSERT_COMMON_POSIX(RunOnePassOver(pSimState), "Failed on passover %lu", cycleCount);
-        #endif
+#endif
 
-        #ifdef ON_REMOTE
-        RunFluidStep_GPU(pSimState,gpu);
+#ifdef ON_REMOTE
+        RunFluidStep_GPU(pSimState, &gpu);
         SimSnap_t* single_snap = CreateSimSnap(pSimState);
         while (Transform_SendNewSimSnap(single_snap) != TRANSFORM_SUCCESS) {
         }
-        #endif
+#endif
         cycleCount++;
         // usleep(2);
     }
