@@ -1,15 +1,17 @@
-#include <sched.h>
-#include <time.h>
-#include <unistd.h>
-#define GL_SILENCE_DEPRECATION
-#include "../../../mpsLibC/common/Assert_Common.h"
-#include "../../Transform/inc/Transform.h"
-#include "../inc/Renderer.h"
-#include "AtomicFlag.h"
-#include "LFfifo.h"
-#include "Renderer_ColorFrame.h"
-#include <GLFW/glfw3.h>
-#include <pthread.h>
+#include "../../config.h"
+#ifndef OFF_SCREEN_RENDERING
+#    include <sched.h>
+#    include <time.h>
+#    include <unistd.h>
+#    define GL_SILENCE_DEPRECATION
+#    include "../../../mpsLibC/common/Assert_Common.h"
+#    include "../../Transform/inc/Transform.h"
+#    include "../inc/Renderer.h"
+#    include "AtomicFlag.h"
+#    include "LFfifo.h"
+#    include "Renderer_ColorFrame.h"
+#    include <GLFW/glfw3.h>
+#    include <pthread.h>
 
 static LF_Fifo_t* rawFrameInFifo = NULL;
 
@@ -197,3 +199,5 @@ render_err_t Render_RawFramesProcessing_Dtr(void) {
     ASSERT_COMMON_POSIX(LF_Fifo_Dtr(rawFrameInFifo), "Fialed ot dtr fifo");
     return RENDER_SUCCESS;
 }
+
+#endif
