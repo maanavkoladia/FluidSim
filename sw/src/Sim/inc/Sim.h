@@ -65,6 +65,7 @@ typedef struct {
     double* uy;
     double* p;
     CellMaterial_t* type;
+    Cell_t** cells;
 } SimSnap_t;
 
 /* ================================================== */

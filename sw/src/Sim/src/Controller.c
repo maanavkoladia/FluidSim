@@ -149,7 +149,11 @@ CellMaterial_t* FlattenType(Cell_t** cells, uint64_t nx, uint64_t ny) {
 
 sim_err_t Sim_SimSnap_Yeild(SimSnap_t* pSnap) {
     ASSERT_COMMON(pSnap, "NULL snap yeild");
-    FreeCells(pSnap->cells, pSnap->nx);
+    //FreeCells(pSnap->cells, pSnap->nx);
+    free(pSnap->p);
+    free(pSnap->type);
+    free(pSnap->ux);
+    free(pSnap->uy);
     free(pSnap);
 
     // LOG("Freed Yeild Snap");
@@ -236,8 +240,12 @@ SimSnap_t* CreateSimSnap(SimState_t* state) {
     SimSnap_t* res = malloc(sizeof(SimSnap_t));
     res->nx = state->nx;
     res->ny = state->ny;
-    res->cells = CreateCellsBuffer(res->nx, res->ny);
-    CopyCells(res->cells, GetCellsInUse(state), res->nx, res->ny);
+
+    res->ux = FlattenUX(GetCellsInUse(state),state->nx,state->ny);
+    res->uy = FlattenUY(GetCellsInUse(state),state->nx,state->ny);
+    res->p = FlattenPressure(GetCellsInUse(state),state->nx,state->ny);
+    res->type = FlattenType(GetCellsInUse(state),state->nx,state->ny);
+
     return res;
 }
 
@@ -401,19 +409,21 @@ static void InjectVelocity_LeftEdge_ToRight(SimState_t* pState, velocity_t vel) 
     }
 }
 
+v
+
 static sim_err_t RunOnePassOver(SimState_t* pSimState) {
     ASSERT_COMMON(pSimState, "Got a NULL Sim State");
     // run psolver
     // LOG("Starting PressureSolver Passover");
-    ASSERT_COMMON_POSIX(RunPressureSolver(pSimState), "Something in pSolve shat itself");
-
-    // run adection
-    // Send SimSnap frame
-    SimSnap_t* single_snap = CreateSimSnap(pSimState);
-    while (Transform_SendNewSimSnap(single_snap) != TRANSFORM_SUCCESS) {
-    }
-
-    ASSERT_COMMON_POSIX(AdvectVelocity(pSimState), "Something in pSolve shat itself");
+    #ifndef ON_REMOTE
+        ASSERT_COMMON_POSIX(RunPressureSolver(pSimState), "Something in pSolve shat itself");
+        // run adection
+        // Send SimSnap frame
+        SimSnap_t* single_snap = CreateSimSnap(pSimState);
+        while (Transform_SendNewSimSnap(single_snap) != TRANSFORM_SUCCESS) {
+        }
+        ASSERT_COMMON_POSIX(AdvectVelocity(pSimState), "Something in pSolve shat itself");
+    #endif
 
     // Sim_SimSnap_Yeild(single_snap);
     return SIM_SUCCESS;
