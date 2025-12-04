@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "omp.h"
 
 /* ================================================== */
 /*                    enums & types                   */
@@ -97,29 +98,57 @@ double velTerm(SimState_t* g, int x, int y){
             return (velocityRight - velocityLeft + velocityTop - velocityBottom) / g->dt;
 }
 
+void SyncVeclocities(SimState_t* pSimState){
+    Cell_t** curr = GetCellsInUse(pSimState);
+    Cell_t** next = GetCellNextInUse(pSimState);
 
+    FOR_LOOP_COMMON(i,pSimState->nx){
+        FOR_LOOP_COMMON(j,pSimState->ny){
+            next[i][j].ux = curr[i][j].ux;
+            next[i][j].uy = curr[i][j].uy;
+        }
+    }
+}
+
+void SyncPressure(SimState_t* pSimState){
+    Cell_t** curr = GetCellsInUse(pSimState);
+    Cell_t** next = GetCellNextInUse(pSimState);
+
+    FOR_LOOP_COMMON(i,pSimState->nx){
+        FOR_LOOP_COMMON(j,pSimState->ny){
+            next[i][j].p = curr[i][j].p;
+        }
+    }
+}
 
 void PressureSolve(SimState_t* g){
-    FOR_LOOP_COMMON(i,g->nx){
-        FOR_LOOP_COMMON(j,g->ny){
+    Cell_t** current = GetCellsInUse(g);
+    Cell_t** next_cells = GetCellNextInUse(g);
+    uint64_t nx = g->nx;
+    uint64_t ny = g->ny;
+    SyncVeclocities(g);
+    #pragma omp parallel for 
+    FOR_LOOP_COMMON(i,nx){
+        FOR_LOOP_COMMON(j,ny){
             double newPressure;
             if((FluidGrid_IsSolid(g,i,j)) || (fluidEdgeCount(g,i,j) == 0)){
                 newPressure = 0;
             }else{
-                double pressureTop    = g->CellBufs_Arr[g->cellBufInUse][i][ clamp_int(j + 1, 0, g->ny - 1) ].p * flowTop(g,i,j);
-                double pressureLeft   = g->CellBufs_Arr[g->cellBufInUse][ clamp_int(i - 1, 0, g->nx - 1) ][j].p * flowLeft(g,i,j);
-                double pressureRight  = g->CellBufs_Arr[g->cellBufInUse][ clamp_int(i + 1, 0, g->nx - 1) ][j].p * flowRight(g,i,j);
-                double pressureBottom = g->CellBufs_Arr[g->cellBufInUse][i][ clamp_int(j - 1, 0, g->ny - 1) ].p * flowBottom(g,i,j);
+                double pressureTop    = current[i][ clamp_int(j + 1, 0, g->ny - 1) ].p * flowTop(g,i,j);
+                double pressureLeft   = current[ clamp_int(i - 1, 0, g->nx - 1) ][j].p * flowLeft(g,i,j);
+                double pressureRight  = current[ clamp_int(i + 1, 0, g->nx - 1) ][j].p * flowRight(g,i,j);
+                double pressureBottom = current[i][ clamp_int(j - 1, 0, g->ny - 1) ].p * flowBottom(g,i,j);
 
                 double pressureSum = pressureRight + pressureLeft + pressureTop + pressureBottom;
                 newPressure = (pressureSum - g->p_density * g->w * velTerm(g,i,j)) / fluidEdgeCount(g,i,j);
 
             }
-
-            double oldPressure = g->CellBufs_Arr[g->cellBufInUse][i][j].p;
-            g->CellBufs_Arr[g->cellBufInUse][i][j].p = oldPressure + (newPressure - oldPressure) * g->overrelaxation_const;
+            double oldPressure = current[i][j].p;
+            next_cells[i][j].p = oldPressure + (newPressure - oldPressure) * g->overrelaxation_const;
+            
         }
     }
+    Sim_State_SwapCellsInUse(g);
 }
 
 void FluidGrid_UpdateVelocities(SimState_t* g) {
@@ -130,6 +159,8 @@ void FluidGrid_UpdateVelocities(SimState_t* g) {
     int vxHeight = g->ny;
     int vyWidth  = g->nx;
     int vyHeight = g->ny;
+
+    SyncPressure(g);
 
     // Horizontal velocities
     for (int x = 0; x < vxWidth; x++) {
