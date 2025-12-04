@@ -2,13 +2,12 @@ PROJECT = FluidSim
 BUILD_DIR = build
 TARGET = $(PROJECT).elf
 
+
+
 CC = gcc
 
 LIB_DIR = mpsLibC
 LIB = $(LIB_DIR)/build/$(LIB_DIR).a 
-
-
-
 
 OS_TYPE := $(shell uname -s)
 
@@ -40,33 +39,38 @@ SRC_FILES = \
 			src/Render/src/Renderer.c	\
 			src/Render/src/Renderer_ColorFrame.c	\
 			src/Render/src/Renderer_RawFrames.c	\
-			src/Render/src/Renderer_OffScreen.c	\
 			src/Render/src/Renderer_Display.c	\
-		   
+			src/Render/src/Renderer_ColorFrame_OS.c	\
+
 INCLUDES = \
 		   -I$(LIB_DIR)/common	\
 		   -I$(LIB_DIR)/RingBuffer/PFifo	\
 		   -I$(LIB_DIR)/RingBuffer/LFfifo	\
 
+
 HDR_FILES = \
 		   src/config.h
 
-
 ifeq ($(OS_TYPE),Darwin)
-    LD_FLAGS += \
-				-framework OpenGL	\
-				-L/opt/homebrew/lib
+LD_FLAGS += \
+			-framework OpenGL	\
+			-L/opt/homebrew/lib
+C_FLAGS += \
+		   -I/opt/homebrew/include 
 
-	C_FLAGS += \
-			   -I/opt/homebrew/include 
-
+SRC_FILES+= \
+			src/Render/src/Renderer_OffScreen_Stub.c
 endif
 
 ifeq ($(OS_TYPE),Linux)
-    LD_FLAGS += \
-				-lEGL 	\
-				-lGL	\
-				-lGLEW 	
+LD_FLAGS += \
+			-lEGL 	\
+			-lGL	\
+			-lGLEW 		\
+
+SRC_FILES+= \
+			src/Render/src/Renderer_OffScreen.c
+
 endif
 
 OBJS = $(patsubst src/%.c,$(BUILD_DIR)/%.o,$(SRC_FILES))
