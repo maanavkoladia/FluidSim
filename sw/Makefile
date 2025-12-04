@@ -1,5 +1,5 @@
 # === Configuration ===
-ON_REMOTE := true
+ON_REMOTE := false
 
 PROJECT = FluidSim
 BUILD_DIR = build
@@ -7,21 +7,19 @@ TARGET = $(PROJECT).elf
 
 OS_TYPE := $(shell uname -s)
 
-CC=gcc
-NVCC=nvcc
-
-# === Flags ===
+# === Default compiler/flags ===
+CC = gcc
 C_FLAGS = -Wextra -Wall -O0 -g3 -MMD -MP
-LD_FLAGS = -lm -lpthread
+NVCC = nvcc
 NVCC_FLAGS = -O2 -std=c++14 --expt-extended-lambda -arch=sm_70
-C_FLAGS = $(NVCC_FLAGS)
 
-# Default compiler
 ifeq ($(ON_REMOTE),true)
+    # Remote = use NVCC everywhere
     LIB_DIR_CK = ./lib/ck/build/lib
     LIB_CK = $(LIB_DIR_CK)/libck.a
-	CC=$(NVCC)
-	C_FLAGS = $(NVCC_FLAGS)
+
+    CC = $(NVCC)
+    C_FLAGS = $(NVCC_FLAGS)
 endif
 
 LIB_DIR_MPS = mpsLibC
@@ -54,7 +52,7 @@ ifeq ($(OS_TYPE),Darwin)
 endif
 
 ifeq ($(OS_TYPE),Linux)
-    LD_FLAGS += -lEGL -lGL
+    LD_FLAGS += -lEGL -lGL -lm
     SRC_C_FILES += src/Render/src/Renderer_OffScreen.c
 
     ifeq ($(ON_REMOTE),true)
