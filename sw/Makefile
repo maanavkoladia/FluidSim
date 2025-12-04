@@ -40,7 +40,6 @@ SRC_FILES = \
 			src/Render/src/Renderer.c	\
 			src/Render/src/Renderer_ColorFrame.c	\
 			src/Render/src/Renderer_RawFrames.c	\
-			src/Render/src/Renderer_OffScreen.c	\
 			src/Render/src/Renderer_Display.c	\
 		   
 INCLUDES = \
@@ -67,6 +66,10 @@ ifeq ($(OS_TYPE),Linux)
 				-lEGL 	\
 				-lGL	\
 				-lGLEW 	
+
+	SRC_FILES+= \
+				src/Render/src/Renderer_OffScreen.c
+
 endif
 
 OBJS = $(patsubst src/%.c,$(BUILD_DIR)/%.o,$(SRC_FILES))
