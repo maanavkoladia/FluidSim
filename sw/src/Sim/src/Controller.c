@@ -349,7 +349,7 @@ static void* Task_Controller(void* pvArgs) {
     ASSERT_COMMON_POSIX(InitSimState(&simParams, &pSimState), "Failed to init simState Structure");
     // PrintCellVel(pSimState);
     //CreateSolidSquare(pSimState, 4);
-    CreateSolidCircle(pSimState,4);
+    CreateSolidCircle(pSimState,8);
     while (1) {
         if (AtomicFlag_GetStatus(&killFlag) == KILL_FLAG_SET) {
             FreeSimState(pSimState);
@@ -358,7 +358,7 @@ static void* Task_Controller(void* pvArgs) {
         //InjectVelocityCenter(pSimState);
          //InjectVelocity_LeftEdge_ToRight(pSimState, 1);
         uint64_t radius = 15;                                   // tweak as needed, in cells
-        InjectVelocityCircleLeftEdge(pSimState, radius, 7,2.0); // strong rightward inlet
+        InjectVelocityCircleLeftEdge(pSimState, radius, 7,1.0); // strong rightward inlet
 
         // PrintCellVel(pSimState);
         //  LOG("Ran TimeStep: %lu", cycleCount);
