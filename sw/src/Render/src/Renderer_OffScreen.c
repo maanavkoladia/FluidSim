@@ -1,3 +1,4 @@
+// Renderer_OffScreen.c
 #include "Renderer_OffScreen.h"
 #include "Assert_Common.h"
 #include "AtomicFlag.h"
@@ -14,15 +15,12 @@
 #    include "Renderer_RawFrames.h"
 #endif
 
-#define GLEW_STATIC  // optional if using static lib
-#include <GL/glew.h> // MUST be before gl.h
-//
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
-#include <GL/gl.h>
+#include <GLES2/gl2.h>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h" // make sure this is in your include path
+#include "stb_image_write.h" // ensure in include path
 
 static AtomicFlag_t killFlag;
 
@@ -42,6 +40,12 @@ static unsigned char* pixelBuffer = NULL;
 
 static pthread_t renderer_main_th;
 
+// Forward declaration
+static void Render_Draw(void);
+
+// ----------------------------------------
+// Frame drawing
+// ----------------------------------------
 static void Render_Draw(void) {
 #ifdef DISPLAY_COLORS
     Render_ColorFrame_Process();
@@ -56,6 +60,9 @@ static void framebuffer_resize(int w, int h) {
     glViewport(0, 0, gWinW, gWinH);
 }
 
+// ----------------------------------------
+// Offscreen render task
+// ----------------------------------------
 static void* Task_OffScreen_Buffering(void* pvArgs) {
     // 1. Initialize EGL
     eglDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
@@ -95,7 +102,6 @@ static void* Task_OffScreen_Buffering(void* pvArgs) {
     ASSERT_COMMON(eglContext != EGL_NO_CONTEXT, "Failed to create EGL context");
     ASSERT_COMMON(eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext),
                   "Failed to make EGL context current");
-    ASSERT_COMMON(glewInit() == GLEW_OK, "Failed to initialize GLEW");
 
     LOG("EGL offscreen context created successfully");
 
@@ -105,14 +111,14 @@ static void* Task_OffScreen_Buffering(void* pvArgs) {
 
     glGenTextures(1, &fboTexture);
     glBindTexture(GL_TEXTURE_2D, fboTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, gWinW, gWinH, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, gWinW, gWinH, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fboTexture, 0);
 
     glGenRenderbuffers(1, &rboDepth);
     glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, gWinW, gWinH);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, gWinW, gWinH);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboDepth);
 
     ASSERT_COMMON(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE,
@@ -123,9 +129,7 @@ static void* Task_OffScreen_Buffering(void* pvArgs) {
     pixelBuffer = (unsigned char*)malloc(gWinW * gWinH * 4);
     ASSERT_COMMON(pixelBuffer != NULL, "Failed to allocate pixel buffer");
 
-    LOG("Render Loop started");
-
-    // Make sure folder exists
+    LOG("Render loop started");
     system("mkdir -p frames");
 
     int frameIndex = 0;
@@ -135,14 +139,18 @@ static void* Task_OffScreen_Buffering(void* pvArgs) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         Render_Draw();
+
+        // Sleep to throttle loop (simulate 60 FPS)
         usleep(16666);
-        // Read pixels from FBO
+
+        // Read pixels
         glReadPixels(0, 0, gWinW, gWinH, GL_RGBA, GL_UNSIGNED_BYTE, pixelBuffer);
 
         // Save PNG using stb_image_write
         char filename[256];
         snprintf(filename, sizeof(filename), "frames/frame_%05d.png", frameIndex++);
-        // Note: OpenGL origin is bottom-left, PNG expects top-left origin, so flip vertically
+
+        // Flip vertically (OpenGL origin bottom-left)
         unsigned char* flipped = (unsigned char*)malloc(gWinW * gWinH * 4);
         for (int y = 0; y < gWinH; y++) {
             memcpy(flipped + (gWinH - 1 - y) * gWinW * 4, pixelBuffer + y * gWinW * 4, gWinW * 4);
@@ -154,8 +162,11 @@ static void* Task_OffScreen_Buffering(void* pvArgs) {
     return NULL;
 }
 
+// ----------------------------------------
+// Public API
+// ----------------------------------------
 render_err_t OffScreenRender_Init(void) {
-    LOG("Render Starting Up");
+    LOG("Renderer starting up");
     AtomicFlag_Clear(&killFlag);
 
 #ifdef DISPLAY_COLORS
@@ -166,7 +177,8 @@ render_err_t OffScreenRender_Init(void) {
 
     ASSERT_COMMON_POSIX(pthread_create(&renderer_main_th, NULL, Task_OffScreen_Buffering, NULL),
                         "Failed to start renderer thread");
-    LOG("Renderer Init Success");
+
+    LOG("Renderer init success");
     return RENDER_SUCCESS;
 }
 
@@ -200,24 +212,21 @@ render_err_t OffScreenRender_Dtr(void) {
 
     // Cleanup EGL
     if (eglDisplay != EGL_NO_DISPLAY) {
-        ASSERT_COMMON(eglMakeCurrent(eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT),
-                      "Failed to release EGL context");
+        eglMakeCurrent(eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
     }
     if (eglContext != EGL_NO_CONTEXT) {
-        ASSERT_COMMON(eglDestroyContext(eglDisplay, eglContext) != EGL_FALSE,
-                      "Failed to destroy EGL context");
+        eglDestroyContext(eglDisplay, eglContext);
         eglContext = EGL_NO_CONTEXT;
     }
     if (eglSurface != EGL_NO_SURFACE) {
-        ASSERT_COMMON(eglDestroySurface(eglDisplay, eglSurface) != EGL_FALSE,
-                      "Failed to destroy EGL surface");
+        eglDestroySurface(eglDisplay, eglSurface);
         eglSurface = EGL_NO_SURFACE;
     }
     if (eglDisplay != EGL_NO_DISPLAY) {
-        ASSERT_COMMON(eglTerminate(eglDisplay) != EGL_FALSE, "Failed to terminate EGL display");
+        eglTerminate(eglDisplay);
         eglDisplay = EGL_NO_DISPLAY;
     }
 
-    LOG("Renderer Dtr success");
+    LOG("Renderer destruction success");
     return RENDER_SUCCESS;
 }
