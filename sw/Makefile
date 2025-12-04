@@ -81,7 +81,8 @@ DEPS = $(OBJS:.o=.d)
 INCLUDES = -I$(LIB_DIR_MPS)/common \
            -I$(LIB_DIR_MPS)/RingBuffer/PFifo \
            -I$(LIB_DIR_MPS)/RingBuffer/LFfifo \
-           -I./lib/ck/build/include
+           -I./lib/ck/build/include \
+           -Isrc/Sim/inc
 
 HDR_FILES = src/config.h
 

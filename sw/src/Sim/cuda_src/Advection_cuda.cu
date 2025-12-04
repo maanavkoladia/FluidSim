@@ -15,8 +15,8 @@
 // ---------------------------------------------------------
 
 typedef struct {
-    double x;
-    double y;
+    float x;
+    float y;
 } Vector2;
 
 __device__ __forceinline__
@@ -32,13 +32,13 @@ Vector2 vec2_sub_d(Vector2 a, Vector2 b) {
 }
 
 __device__ __forceinline__
-Vector2 vec2_scale_d(Vector2 v, double s) {
+Vector2 vec2_scale_d(Vector2 v, float s) {
     Vector2 r = { v.x * s, v.y * s };
     return r;
 }
 
 __device__ __forceinline__
-double clamp_double_d(double v, double minVal, double maxVal) {
+float clamp_float_d(float v, float minVal, float maxVal) {
     if (v < minVal) return minVal;
     if (v > maxVal) return maxVal;
     return v;
@@ -52,12 +52,12 @@ int clamp_int_d(int v, int minVal, int maxVal) {
 }
 
 __device__ __forceinline__
-double clamp01_d(double v) {
-    return clamp_double_d(v, 0.0, 1.0);
+float clamp01_d(float v) {
+    return clamp_float_d(v, 0.0, 1.0);
 }
 
 __device__ __forceinline__
-double lerp_d(double a, double b, double t) {
+float lerp_d(float a, float b, float t) {
     return a + (b - a) * t;
 }
 
@@ -83,13 +83,13 @@ bool isSolid_d(const int* __restrict__ cellType,
 
 // Center of a cell in world space
 __device__ __forceinline__
-Vector2 CellCentre_d(int nx, int ny, double w, int x, int y)
+Vector2 CellCentre_d(int nx, int ny, float w, int x, int y)
 {
-    double boundsSizeX = (double)nx * w;
-    double boundsSizeY = (double)ny * w;
+    float boundsSizeX = (float)nx * w;
+    float boundsSizeY = (float)ny * w;
 
-    double bottomLeftX = -boundsSizeX * 0.5;
-    double bottomLeftY = -boundsSizeY * 0.5;
+    float bottomLeftX = -boundsSizeX * 0.5;
+    float bottomLeftY = -boundsSizeY * 0.5;
 
     Vector2 base   = { bottomLeftX, bottomLeftY };
     Vector2 offset = { (x + 0.5) * w, (y + 0.5) * w };
@@ -99,7 +99,7 @@ Vector2 CellCentre_d(int nx, int ny, double w, int x, int y)
 
 // ux: left edge center
 __device__ __forceinline__
-Vector2 LeftEdgeCentre_d(int nx, int ny, double w, int x, int y)
+Vector2 LeftEdgeCentre_d(int nx, int ny, float w, int x, int y)
 {
     Vector2 c   = CellCentre_d(nx, ny, w, x, y);
     Vector2 off = { w * 0.5, 0.0 };
@@ -108,7 +108,7 @@ Vector2 LeftEdgeCentre_d(int nx, int ny, double w, int x, int y)
 
 // uy: bottom edge center
 __device__ __forceinline__
-Vector2 BottomEdgeCentre_d(int nx, int ny, double w, int x, int y)
+Vector2 BottomEdgeCentre_d(int nx, int ny, float w, int x, int y)
 {
     Vector2 c   = CellCentre_d(nx, ny, w, x, y);
     Vector2 off = { 0.0, w * 0.5 };
@@ -121,26 +121,26 @@ Vector2 BottomEdgeCentre_d(int nx, int ny, double w, int x, int y)
 // ---------------------------------------------------------
 
 __device__
-double SampleBilinearEdgesHorizontal_d(
-    const double* __restrict__ ux,
+float SampleBilinearEdgesHorizontal_d(
+    const float* __restrict__ ux,
     int edgeCountX,
     int edgeCountY,
-    double cellSize,
+    float cellSize,
     Vector2 worldPos)
 {
-    double width  = (double)(edgeCountX - 1) * cellSize;
-    double height = (double)(edgeCountY - 1) * cellSize;
+    float width  = (float)(edgeCountX - 1) * cellSize;
+    float height = (float)(edgeCountY - 1) * cellSize;
 
-    double px = (worldPos.x + width  * 0.5) / cellSize; // [0, edgeCountX]
-    double py = (worldPos.y + height * 0.5) / cellSize; // [0, edgeCountY]
+    float px = (worldPos.x + width  * 0.5) / cellSize; // [0, edgeCountX]
+    float py = (worldPos.y + height * 0.5) / cellSize; // [0, edgeCountY]
 
     int left   = clamp_int_d((int)px, 0, edgeCountX - 2);
     int bottom = clamp_int_d((int)py, 0, edgeCountY - 2);
     int right  = left + 1;
     int top    = bottom + 1;
 
-    double xFrac = clamp01_d(px - (double)left);
-    double yFrac = clamp01_d(py - (double)bottom);
+    float xFrac = clamp01_d(px - (float)left);
+    float yFrac = clamp01_d(py - (float)bottom);
 
     // indices into ux field
     int idxLT = idx2D(left,  top,    edgeCountX);
@@ -148,49 +148,49 @@ double SampleBilinearEdgesHorizontal_d(
     int idxLB = idx2D(left,  bottom, edgeCountX);
     int idxRB = idx2D(right, bottom, edgeCountX);
 
-    double valueTop    = lerp_d(ux[idxLT], ux[idxRT], xFrac);
-    double valueBottom = lerp_d(ux[idxLB], ux[idxRB], xFrac);
+    float valueTop    = lerp_d(ux[idxLT], ux[idxRT], xFrac);
+    float valueBottom = lerp_d(ux[idxLB], ux[idxRB], xFrac);
     return lerp_d(valueBottom, valueTop, yFrac);
 }
 
 __device__
-double SampleBilinearEdgesVertical_d(
-    const double* __restrict__ uy,
+float SampleBilinearEdgesVertical_d(
+    const float* __restrict__ uy,
     int edgeCountX,
     int edgeCountY,
-    double cellSize,
+    float cellSize,
     Vector2 worldPos)
 {
-    double width  = (double)(edgeCountX - 1) * cellSize;
-    double height = (double)(edgeCountY - 1) * cellSize;
+    float width  = (float)(edgeCountX - 1) * cellSize;
+    float height = (float)(edgeCountY - 1) * cellSize;
 
-    double px = (worldPos.x + width  * 0.5) / cellSize; // [0, edgeCountX]
-    double py = (worldPos.y + height * 0.5) / cellSize; // [0, edgeCountY]
+    float px = (worldPos.x + width  * 0.5) / cellSize; // [0, edgeCountX]
+    float py = (worldPos.y + height * 0.5) / cellSize; // [0, edgeCountY]
 
     int left   = clamp_int_d((int)px, 0, edgeCountX - 2);
     int bottom = clamp_int_d((int)py, 0, edgeCountY - 2);
     int right  = left + 1;
     int top    = bottom + 1;
 
-    double xFrac = clamp01_d(px - (double)left);
-    double yFrac = clamp01_d(py - (double)bottom);
+    float xFrac = clamp01_d(px - (float)left);
+    float yFrac = clamp01_d(py - (float)bottom);
 
     int idxLT = idx2D(left,  top,    edgeCountX);
     int idxRT = idx2D(right, top,    edgeCountX);
     int idxLB = idx2D(left,  bottom, edgeCountX);
     int idxRB = idx2D(right, bottom, edgeCountX);
 
-    double valueTop    = lerp_d(uy[idxLT], uy[idxRT], xFrac);
-    double valueBottom = lerp_d(uy[idxLB], uy[idxRB], xFrac);
+    float valueTop    = lerp_d(uy[idxLT], uy[idxRT], xFrac);
+    float valueBottom = lerp_d(uy[idxLB], uy[idxRB], xFrac);
     return lerp_d(valueBottom, valueTop, yFrac);
 }
 
 __device__
 Vector2 GetVelocityAtWorldPos_d(
-    const double* __restrict__ ux,
-    const double* __restrict__ uy,
+    const float* __restrict__ ux,
+    const float* __restrict__ uy,
     int nx, int ny,
-    double w,
+    float w,
     Vector2 worldPos)
 {
     int vxWidth  = nx;
@@ -198,9 +198,9 @@ Vector2 GetVelocityAtWorldPos_d(
     int vyWidth  = nx;
     int vyHeight = ny;
 
-    double velX = SampleBilinearEdgesHorizontal_d(
+    float velX = SampleBilinearEdgesHorizontal_d(
         ux, vxWidth, vxHeight, w, worldPos);
-    double velY = SampleBilinearEdgesVertical_d(
+    float velY = SampleBilinearEdgesVertical_d(
         uy, vyWidth, vyHeight, w, worldPos);
 
     Vector2 v = { velX, velY };
@@ -214,13 +214,13 @@ Vector2 GetVelocityAtWorldPos_d(
 // Advect horizontal velocities (ux)
 __global__
 void AdvectVelocityHorizontalKernel(
-    const double* __restrict__ uxCurr,
-    const double* __restrict__ uyCurr,
-    double* __restrict__ uxNext,
+    const float* __restrict__ uxCurr,
+    const float* __restrict__ uyCurr,
+    float* __restrict__ uxNext,
     const int* __restrict__ cellType,
     int nx, int ny,
-    double dt,
-    double w)
+    float dt,
+    float w)
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -242,20 +242,20 @@ void AdvectVelocityHorizontalKernel(
     Vector2 posPrev = vec2_sub_d(pos, vec2_scale_d(vel, dt));
 
     // Semi-Lagrangian sample: take velocity at back-traced position
-    double newUX = GetVelocityAtWorldPos_d(uxCurr, uyCurr, nx, ny, w, posPrev).x;
+    float newUX = GetVelocityAtWorldPos_d(uxCurr, uyCurr, nx, ny, w, posPrev).x;
     uxNext[idx] = newUX;
 }
 
 // Advect vertical velocities (uy)
 __global__
 void AdvectVelocityVerticalKernel(
-    const double* __restrict__ uxCurr,
-    const double* __restrict__ uyCurr,
-    double* __restrict__ uyNext,
+    const float* __restrict__ uxCurr,
+    const float* __restrict__ uyCurr,
+    float* __restrict__ uyNext,
     const int* __restrict__ cellType,
     int nx, int ny,
-    double dt,
-    double w)
+    float dt,
+    float w)
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -276,7 +276,7 @@ void AdvectVelocityVerticalKernel(
     Vector2 vel     = GetVelocityAtWorldPos_d(uxCurr, uyCurr, nx, ny, w, pos);
     Vector2 posPrev = vec2_sub_d(pos, vec2_scale_d(vel, dt));
 
-    double newUY = GetVelocityAtWorldPos_d(uxCurr, uyCurr, nx, ny, w, posPrev).y;
+    float newUY = GetVelocityAtWorldPos_d(uxCurr, uyCurr, nx, ny, w, posPrev).y;
     uyNext[idx] = newUY;
 }
 
@@ -286,12 +286,12 @@ void AdvectVelocityVerticalKernel(
 
 cudaError_t AdvectVelocityCUDA(
     int nx, int ny,
-    double dt,
-    double w,
-    const double* d_uxCurr,
-    const double* d_uyCurr,
-    double* d_uxNext,
-    double* d_uyNext,
+    float dt,
+    float w,
+    const float* d_uxCurr,
+    const float* d_uyCurr,
+    float* d_uxNext,
+    float* d_uyNext,
     const int* d_cellType)
 {
     dim3 block(16, 16);
