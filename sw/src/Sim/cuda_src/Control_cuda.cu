@@ -1,12 +1,10 @@
-<<<<<<< HEAD
-// gpu_fluid.cu (compile with nvcc)
 
 #include <cuda_runtime.h>
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "Sim.h"
 #include "SimTypes.h"
+#include "Sim.h"
 #include "Control_cuda.h"
 #include "Advection_cuda.h"
 #include "Pressure_cuda.h"

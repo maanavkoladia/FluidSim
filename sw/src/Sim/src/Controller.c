@@ -1,6 +1,6 @@
 #include "Controller.h"
 #include "../../Transform/inc/Transform.h"
-#include "../inc/Sim.h"
+#include "Sim.h"
 #include "Advection.h"
 #include "Assert_Common.h"
 #include "AtomicFlag.h"
@@ -15,8 +15,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include "Control_cuda.h"
 #define TASK_CONTROLLER_RET (NULL)
 
+
+GPUFluidState gpu = {0};
 typedef struct {
     sim_params_t* runParams;
 } ControllerArgs_t;
@@ -411,16 +414,14 @@ static sim_err_t RunOnePassOver(SimState_t* pSimState) {
     ASSERT_COMMON(pSimState, "Got a NULL Sim State");
 // run psolver
 // LOG("Starting PressureSolver Passover");
-#ifndef ON_REMOTE
     ASSERT_COMMON_POSIX(RunPressureSolver(pSimState), "Something in pSolve shat itself");
     // run adection
     // Send SimSnap frame
-    SimSnap_t* single_snap = CreateSimSnap(pSimState);
+    
+    ASSERT_COMMON_POSIX(AdvectVelocity(pSimState), "Something in pSolve shat itself");
+SimSnap_t* single_snap = CreateSimSnap(pSimState);
     while (Transform_SendNewSimSnap(single_snap) != TRANSFORM_SUCCESS) {
     }
-    ASSERT_COMMON_POSIX(AdvectVelocity(pSimState), "Something in pSolve shat itself");
-#endif
-
     // Sim_SimSnap_Yeild(single_snap);
     return SIM_SUCCESS;
 }
@@ -442,9 +443,11 @@ static void* Task_Controller(void* pvArgs) {
     CopyInArgs(pvArgs, &simParams);
     // Inject velocity
     ASSERT_COMMON_POSIX(InitSimState(&simParams, &pSimState), "Failed to init simState Structure");
+
     // PrintCellVel(pSimState);
     // CreateSolidSquare(pSimState, 4);
     // CreateSolidCircle(pSimState,8);
+    
     while (1) {
         if (AtomicFlag_GetStatus(&killFlag) == KILL_FLAG_SET) {
             FreeSimState(pSimState);
@@ -457,8 +460,16 @@ static void* Task_Controller(void* pvArgs) {
 
         // PrintCellVel(pSimState);
         //  LOG("Ran TimeStep: %lu", cycleCount);
-
+        #ifndef ON_REMOTE
         ASSERT_COMMON_POSIX(RunOnePassOver(pSimState), "Failed on passover %lu", cycleCount);
+        #endif
+
+        #ifdef ON_REMOTE
+        RunFluidStep_GPU(pSimState,gpu);
+        SimSnap_t* single_snap = CreateSimSnap(pSimState);
+        while (Transform_SendNewSimSnap(single_snap) != TRANSFORM_SUCCESS) {
+        }
+        #endif
         cycleCount++;
         // usleep(2);
     }
