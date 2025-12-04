@@ -253,8 +253,6 @@ void CreateSolidSquare(SimState_t* pState, uint64_t dim) {
             pCells[i + midX][j + midY].ux = 0;
             pCells[i + midX][j + midY].uy = 0;
             pCells[i + midX][j + midY].p = 0;
-
-
         }
     }
 }
@@ -313,15 +311,15 @@ static void* Task_Controller(void* pvArgs) {
     // Inject velocity
     ASSERT_COMMON_POSIX(InitSimState(&simParams, &pSimState), "Failed to init simState Structure");
     // PrintCellVel(pSimState);
-    //CreateSolidSquare(pSimState, 10);
+    // CreateSolidSquare(pSimState, 10);
     while (1) {
         if (AtomicFlag_GetStatus(&killFlag) == KILL_FLAG_SET) {
             FreeSimState(pSimState);
             return TASK_CONTROLLER_RET;
         }
         // InjectVelocityCenter(pSimState);
-         //InjectVelocity_LeftEdge_ToRight(pSimState, 10);
-        uint64_t radius = 5;                                   // tweak as needed, in cells
+        // InjectVelocity_LeftEdge_ToRight(pSimState, 10);
+        uint64_t radius = 5;                                  // tweak as needed, in cells
         InjectVelocityCircleLeftEdge(pSimState, radius, 0.1); // strong rightward inlet
 
         // PrintCellVel(pSimState);
