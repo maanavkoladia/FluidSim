@@ -8,13 +8,13 @@
 #include "LOG.h"
 #include "PressureSolver.h"
 #include "SimTypes.h"
+#include <assert.h>
 #include <math.h>
 #include <pthread.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <assert.h>
 #define TASK_CONTROLLER_RET (NULL)
 
 typedef struct {
@@ -35,8 +35,6 @@ AtomicFlag_t killFlag;
     } while (0)
 
 void FreeCells(Cell_t** cells, uint64_t nx);
-
-
 
 static inline uint64_t FLAT_IDX(uint64_t x, uint64_t y, uint64_t nx) {
     return y * nx + x;
@@ -135,8 +133,7 @@ double* FlattenPressure(Cell_t** cells, uint64_t nx, uint64_t ny) {
 CellMaterial_t* FlattenType(Cell_t** cells, uint64_t nx, uint64_t ny) {
     assert(cells);
 
-    CellMaterial_t* type =
-        (CellMaterial_t*)malloc(sizeof(CellMaterial_t) * nx * ny);
+    CellMaterial_t* type = (CellMaterial_t*)malloc(sizeof(CellMaterial_t) * nx * ny);
     assert(type);
 
     for (uint64_t y = 0; y < ny; y++) {
@@ -149,7 +146,7 @@ CellMaterial_t* FlattenType(Cell_t** cells, uint64_t nx, uint64_t ny) {
 
 sim_err_t Sim_SimSnap_Yeild(SimSnap_t* pSnap) {
     ASSERT_COMMON(pSnap, "NULL snap yeild");
-    //FreeCells(pSnap->cells, pSnap->nx);
+    // FreeCells(pSnap->cells, pSnap->nx);
     free(pSnap->p);
     free(pSnap->type);
     free(pSnap->ux);
@@ -241,21 +238,20 @@ SimSnap_t* CreateSimSnap(SimState_t* state) {
     res->nx = state->nx;
     res->ny = state->ny;
 
-    res->ux = FlattenUX(GetCellsInUse(state),state->nx,state->ny);
-    res->uy = FlattenUY(GetCellsInUse(state),state->nx,state->ny);
-    res->p = FlattenPressure(GetCellsInUse(state),state->nx,state->ny);
-    res->type = FlattenType(GetCellsInUse(state),state->nx,state->ny);
+    res->ux = FlattenUX(GetCellsInUse(state), state->nx, state->ny);
+    res->uy = FlattenUY(GetCellsInUse(state), state->nx, state->ny);
+    res->p = FlattenPressure(GetCellsInUse(state), state->nx, state->ny);
+    res->type = FlattenType(GetCellsInUse(state), state->nx, state->ny);
 
     return res;
 }
 
-
 #include <math.h>
 
 static void InjectVelocityCircleLeftEdge(SimState_t* sim,
-                                         uint64_t radius,   // in cells
-                                         uint64_t offset,   // cells from left edge
-                                         double ux)         // max rightward velocity
+                                         uint64_t radius, // in cells
+                                         uint64_t offset, // cells from left edge
+                                         double ux)       // max rightward velocity
 {
     if (!sim) return;
 
@@ -269,17 +265,17 @@ static void InjectVelocityCircleLeftEdge(SimState_t* sim,
     double cx = (double)offset;
     double cy = (double)(ny - 1) * 0.5;
 
-    double r      = (double)radius;
+    double r = (double)radius;
 
     // Inner radius: full velocity
     // Outer radius: fully faded to 0
-    double r_inner = 0.6 * r;   // tweak 0.5–0.8 to taste
+    double r_inner = 0.6 * r; // tweak 0.5–0.8 to taste
     double r_outer = r;
 
     double r_outer2 = r_outer * r_outer;
 
     uint64_t start_x = (offset > radius) ? (offset - radius) : 0;
-    uint64_t end_x   = (offset + radius < nx) ? (offset + radius) : nx - 1;
+    uint64_t end_x = (offset + radius < nx) ? (offset + radius) : nx - 1;
 
     for (uint64_t y = 0; y < ny; ++y) {
         double dy = (double)y - cy;
@@ -409,21 +405,19 @@ static void InjectVelocity_LeftEdge_ToRight(SimState_t* pState, velocity_t vel) 
     }
 }
 
-v
-
 static sim_err_t RunOnePassOver(SimState_t* pSimState) {
     ASSERT_COMMON(pSimState, "Got a NULL Sim State");
-    // run psolver
-    // LOG("Starting PressureSolver Passover");
-    #ifndef ON_REMOTE
-        ASSERT_COMMON_POSIX(RunPressureSolver(pSimState), "Something in pSolve shat itself");
-        // run adection
-        // Send SimSnap frame
-        SimSnap_t* single_snap = CreateSimSnap(pSimState);
-        while (Transform_SendNewSimSnap(single_snap) != TRANSFORM_SUCCESS) {
-        }
-        ASSERT_COMMON_POSIX(AdvectVelocity(pSimState), "Something in pSolve shat itself");
-    #endif
+// run psolver
+// LOG("Starting PressureSolver Passover");
+#ifndef ON_REMOTE
+    ASSERT_COMMON_POSIX(RunPressureSolver(pSimState), "Something in pSolve shat itself");
+    // run adection
+    // Send SimSnap frame
+    SimSnap_t* single_snap = CreateSimSnap(pSimState);
+    while (Transform_SendNewSimSnap(single_snap) != TRANSFORM_SUCCESS) {
+    }
+    ASSERT_COMMON_POSIX(AdvectVelocity(pSimState), "Something in pSolve shat itself");
+#endif
 
     // Sim_SimSnap_Yeild(single_snap);
     return SIM_SUCCESS;
@@ -454,10 +448,10 @@ static void* Task_Controller(void* pvArgs) {
             FreeSimState(pSimState);
             return TASK_CONTROLLER_RET;
         }
-        //InjectVelocityCenter(pSimState);
-         //InjectVelocity_LeftEdge_ToRight(pSimState, 1);
-        uint64_t radius = 10;                                   // tweak as needed, in cells
-        InjectVelocityCircleLeftEdge(pSimState, radius, 7,1.0); // strong rightward inlet
+        // InjectVelocityCenter(pSimState);
+        // InjectVelocity_LeftEdge_ToRight(pSimState, 1);
+        uint64_t radius = 10;                                    // tweak as needed, in cells
+        InjectVelocityCircleLeftEdge(pSimState, radius, 7, 1.0); // strong rightward inlet
 
         // PrintCellVel(pSimState);
         //  LOG("Ran TimeStep: %lu", cycleCount);
