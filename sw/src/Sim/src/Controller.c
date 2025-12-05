@@ -365,6 +365,7 @@ void CreateSolidCircle(SimState_t* pState, uint64_t radius) {
     uint64_t midY = pState->ny / 2;
 
     Cell_t** pCells = GetCellsInUse(pState);
+    Cell_t** pCellsNext = GetCellNextInUse(pState);
 
     // Loop over a bounding box around the circle
     for (int64_t dy = -(int64_t)radius; dy <= (int64_t)radius; dy++) {
@@ -385,6 +386,10 @@ void CreateSolidCircle(SimState_t* pState, uint64_t radius) {
                 pCells[x][y].ux = 0.0;
                 pCells[x][y].uy = 0.0;
                 pCells[x][y].p = 0.0;
+                pCellsNext[x][y].type = SOLID;
+                pCellsNext[x][y].ux = 0.0;
+                pCellsNext[x][y].uy = 0.0;
+                pCellsNext[x][y].p = 0.0;
             }
         }
     }
@@ -444,7 +449,7 @@ static void* Task_Controller(void* pvArgs) {
 
     // PrintCellVel(pSimState);
     // CreateSolidSquare(pSimState, 4);
-    // CreateSolidCircle(pSimState, 13);
+    // CreateSolidCircle(pSimState, 6);
 
     while (1) {
         if (AtomicFlag_GetStatus(&killFlag) == KILL_FLAG_SET) {
